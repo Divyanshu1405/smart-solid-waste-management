@@ -9,48 +9,24 @@ import {
   TouchableOpacity,
   Linking,
   Alert,
-  ActivityIndicator,
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
 
 import { BASE_URL } from "../config/api";
-import { updateReportStatus } from "../services/reportService";
 
 import StatusBadge from "../components/StatusBadge";
+import StatusTimeline from "../components/StatusTimeline";
 import ConfidenceBar from "../components/ConfidenceBar";
-import { colors, radius, shadow, spacing, statusStyle } from "../theme";
-
-const STATUS_OPTIONS = [
-  { key: "PENDING", label: "Pending" },
-  { key: "IN_PROGRESS", label: "In Progress" },
-  { key: "RESOLVED", label: "Resolved" },
-  { key: "REJECTED", label: "Rejected" },
-];
+import { colors, radius, shadow, spacing } from "../theme";
 
 export default function ReportDetailsScreen({ route }: any) {
   const { report } = route.params;
 
   const [view, setView] = useState<"annotated" | "original">("annotated");
-  const [status, setStatus] = useState<string>(report.status);
-  const [updating, setUpdating] = useState<string | null>(null);
 
   const imageUrl =
     view === "annotated" ? report.annotated_image_url : report.original_image_url;
-
-  const changeStatus = async (next: string) => {
-    if (next === status || updating) return;
-    setUpdating(next);
-    try {
-      const updated = await updateReportStatus(report.id, next);
-      setStatus(updated.status);
-    } catch (e) {
-      console.log(e);
-      Alert.alert("Update failed", "Could not update the status. Try again.");
-    } finally {
-      setUpdating(null);
-    }
-  };
 
   const openMap = () => {
     const url = `https://www.google.com/maps?q=${report.latitude},${report.longitude}`;
@@ -63,7 +39,7 @@ export default function ReportDetailsScreen({ route }: any) {
     <ScrollView contentContainerStyle={styles.body}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Report #{report.id}</Text>
-        <StatusBadge status={status} />
+        <StatusBadge status={report.status} />
       </View>
 
       <View style={styles.toggle}>
@@ -115,42 +91,15 @@ export default function ReportDetailsScreen({ route }: any) {
         </View>
       </View>
 
-      <Text style={styles.sectionLabel}>UPDATE STATUS</Text>
-      <View style={styles.statusGrid}>
-        {STATUS_OPTIONS.map((opt) => {
-          const active = status === opt.key;
-          const s = statusStyle(opt.key);
-          const isBusy = updating === opt.key;
-          return (
-            <TouchableOpacity
-              key={opt.key}
-              activeOpacity={0.85}
-              disabled={!!updating}
-              onPress={() => changeStatus(opt.key)}
-              style={[
-                styles.statusOption,
-                { borderColor: active ? s.fg : colors.border },
-                active && { backgroundColor: s.bg },
-              ]}
-            >
-              {isBusy ? (
-                <ActivityIndicator size="small" color={s.fg} />
-              ) : (
-                <>
-                  <Ionicons name={s.icon} size={18} color={s.fg} />
-                  <Text
-                    style={[
-                      styles.statusOptionText,
-                      { color: active ? s.fg : colors.textMuted },
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          );
-        })}
+      <Text style={styles.sectionLabel}>COMPLAINT STATUS</Text>
+      <View style={styles.statusCard}>
+        <StatusTimeline status={report.status} />
+        <View style={styles.officerNote}>
+          <Ionicons name="information-circle-outline" size={15} color={colors.textMuted} />
+          <Text style={styles.officerNoteText}>
+            Status is updated by municipal officers through the admin dashboard.
+          </Text>
+        </View>
       </View>
 
       <Text style={styles.sectionLabel}>LOCATION & DETAILS</Text>
@@ -330,26 +279,26 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     marginBottom: spacing.md,
   },
-  statusGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  statusOption: {
-    width: "48.5%",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    height: 48,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
+  statusCard: {
     backgroundColor: colors.card,
-    marginBottom: spacing.md,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    ...shadow.card,
   },
-  statusOptionText: {
-    fontSize: 14,
-    fontWeight: "700",
+  officerNote: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  officerNoteText: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.textMuted,
     marginLeft: spacing.sm,
+    lineHeight: 17,
   },
   infoCard: {
     backgroundColor: colors.card,
