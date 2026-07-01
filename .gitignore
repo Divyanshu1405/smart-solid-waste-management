@@ -76,6 +76,7 @@ CLAUDE.md
 
 # Metro
 app/.metro-health-check*
+app/src/config/generatedApi.ts
 
 # Native build folders
 app/android/
@@ -145,3 +146,9 @@ dataset/
 
 # Sample internet test images
 test_images_internet/
+
+# ML training workspace
+ml_training/
+
+#evaluation
+evaluation/

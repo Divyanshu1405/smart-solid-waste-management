@@ -1,3 +1,5 @@
+import type { ReportStatus } from "./status";
+
 export interface Report {
   id: number;
   latitude: number;
@@ -11,7 +13,7 @@ export interface Report {
 
   highest_confidence: number;
 
-  status: string;
+  status: ReportStatus;
 
   created_at: string;
 }

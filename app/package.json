@@ -3,10 +3,16 @@
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
+    "prestart": "node scripts/generate-api-config.js",
     "start": "expo start",
+    "preandroid": "node scripts/generate-api-config.js",
     "android": "expo start --android",
+    "preios": "node scripts/generate-api-config.js",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "preweb": "node scripts/generate-api-config.js",
+    "web": "expo start --web",
+    "pretypecheck": "node scripts/generate-api-config.js",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",

@@ -1,20 +1,14 @@
 import { NavigationContainer } from "@react-navigation/native";
-
-import { createNativeStackNavigator }
-from "@react-navigation/native-stack";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import HomeScreen from "../screens/HomeScreen";
-
 import ReportScreen from "../screens/ReportScreen";
-
 import ReportsScreen from "../screens/ReportsScreen";
-
 import ReportDetailsScreen from "../screens/ReportDetailsScreen";
-
 import { colors } from "../theme";
+import type { RootStackParamList } from "./types";
 
-const Stack =
-  createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
   return (
@@ -37,19 +31,19 @@ export default function AppNavigator() {
         <Stack.Screen
           name="Report"
           component={ReportScreen}
-          options={{ title: "Report Garbage" }}
+          options={{ title: "Submit Report" }}
         />
 
         <Stack.Screen
           name="Reports"
           component={ReportsScreen}
-          options={{ title: "All Reports" }}
+          options={{ title: "Reports" }}
         />
 
         <Stack.Screen
           name="ReportDetails"
           component={ReportDetailsScreen}
-          options={{ title: "Report Details" }}
+          options={{ title: "Details" }}
         />
       </Stack.Navigator>
     </NavigationContainer>

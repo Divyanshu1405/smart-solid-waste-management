@@ -11,22 +11,35 @@ import {
   Alert,
 } from "react-native";
 
+import { SafeAreaView } from "react-native-safe-area-context";
+
 import { Ionicons } from "@expo/vector-icons";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { BASE_URL } from "../config/api";
-
 import StatusBadge from "../components/StatusBadge";
 import StatusTimeline from "../components/StatusTimeline";
 import ConfidenceBar from "../components/ConfidenceBar";
 import { colors, radius, shadow, spacing } from "../theme";
+import type { RootStackParamList } from "../navigation/types";
+import { joinUrl } from "../utils/url";
 
-export default function ReportDetailsScreen({ route }: any) {
+type ReportDetailsScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  "ReportDetails"
+>;
+
+export default function ReportDetailsScreen({
+  route,
+}: ReportDetailsScreenProps) {
   const { report } = route.params;
 
   const [view, setView] = useState<"annotated" | "original">("annotated");
 
   const imageUrl =
-    view === "annotated" ? report.annotated_image_url : report.original_image_url;
+    view === "annotated"
+      ? report.annotated_image_url
+      : report.original_image_url;
 
   const openMap = () => {
     const url = `https://www.google.com/maps?q=${report.latitude},${report.longitude}`;
@@ -36,93 +49,112 @@ export default function ReportDetailsScreen({ route }: any) {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.body}>
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>Report #{report.id}</Text>
-        <StatusBadge status={report.status} />
-      </View>
-
-      <View style={styles.toggle}>
-        <ToggleTab
-          label="AI Detection"
-          icon="scan"
-          active={view === "annotated"}
-          onPress={() => setView("annotated")}
-        />
-        <ToggleTab
-          label="Original"
-          icon="image"
-          active={view === "original"}
-          onPress={() => setView("original")}
-        />
-      </View>
-
-      <View style={styles.imageCard}>
-        {imageUrl ? (
-          <Image source={{ uri: BASE_URL + imageUrl }} style={styles.image} />
-        ) : (
-          <View style={styles.imageMissing}>
-            <Ionicons name="image-outline" size={40} color={colors.textMuted} />
-            <Text style={styles.imageMissingText}>Image not available</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.detectionCard}>
-        <ConfidenceBar value={report.highest_confidence} />
-        <Text style={styles.explainer}>
-          How sure the AI is that garbage is present — not how severe the issue is.
-        </Text>
-
-        <View style={styles.divider} />
-
-        <View style={styles.statRow}>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>{report.garbage_count}</Text>
-            <Text style={styles.statLabel}>Items detected</Text>
-          </View>
-          <View style={styles.statSep} />
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>
-              {report.garbage_detected ? "Yes" : "No"}
-            </Text>
-            <Text style={styles.statLabel}>Garbage found</Text>
-          </View>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <ScrollView contentContainerStyle={styles.body}>
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>Report #{report.id}</Text>
+          <StatusBadge status={report.status} />
         </View>
-      </View>
 
-      <Text style={styles.sectionLabel}>COMPLAINT STATUS</Text>
-      <View style={styles.statusCard}>
-        <StatusTimeline status={report.status} />
-        <View style={styles.officerNote}>
-          <Ionicons name="information-circle-outline" size={15} color={colors.textMuted} />
-          <Text style={styles.officerNoteText}>
-            Status is updated by municipal officers through the admin dashboard.
+        <View style={styles.toggle}>
+          <ToggleTab
+            label="AI Detection"
+            icon="scan"
+            active={view === "annotated"}
+            onPress={() => setView("annotated")}
+          />
+          <ToggleTab
+            label="Original"
+            icon="image"
+            active={view === "original"}
+            onPress={() => setView("original")}
+          />
+        </View>
+
+        <View style={styles.imageCard}>
+          {imageUrl ? (
+            <Image
+              source={{ uri: joinUrl(BASE_URL, imageUrl) }}
+              style={styles.image}
+            />
+          ) : (
+            <View style={styles.imageMissing}>
+              <Ionicons
+                name="image-outline"
+                size={40}
+                color={colors.textMuted}
+              />
+              <Text style={styles.imageMissingText}>Image not available</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.detectionCard}>
+          <ConfidenceBar value={report.highest_confidence} />
+          <Text style={styles.explainer}>
+            How sure the app is that garbage is present.
           </Text>
+
+          <View style={styles.divider} />
+
+          <View style={styles.statRow}>
+            <View style={styles.stat}>
+              <Text style={styles.statValue}>{report.garbage_count}</Text>
+              <Text style={styles.statLabel}>Items found</Text>
+            </View>
+            <View style={styles.statSep} />
+            <View style={styles.stat}>
+              <Text style={styles.statValue}>
+                {report.garbage_detected ? "Yes" : "No"}
+              </Text>
+              <Text style={styles.statLabel}>Garbage present</Text>
+            </View>
+          </View>
         </View>
-      </View>
 
-      <Text style={styles.sectionLabel}>LOCATION & DETAILS</Text>
-      <View style={styles.infoCard}>
-        <InfoRow
-          icon="navigate"
-          label="Coordinates"
-          value={`${report.latitude.toFixed(5)}, ${report.longitude.toFixed(5)}`}
-        />
-        <View style={styles.divider} />
-        <InfoRow
-          icon="time"
-          label="Reported"
-          value={new Date(report.created_at).toLocaleString()}
-        />
-      </View>
+        <Text style={styles.sectionLabel}>STATUS</Text>
+        <View style={styles.statusCard}>
+          <StatusTimeline status={report.status} />
+          <View style={styles.officerNote}>
+            <Ionicons
+              name="information-circle-outline"
+              size={15}
+              color={colors.textMuted}
+            />
+            <Text style={styles.officerNoteText}>
+              Status is updated by municipal staff.
+            </Text>
+          </View>
+        </View>
 
-      <TouchableOpacity style={styles.mapButton} activeOpacity={0.85} onPress={openMap}>
-        <Ionicons name="map" size={18} color={colors.primary} />
-        <Text style={styles.mapButtonText}>View location on map</Text>
-        <Ionicons name="open-outline" size={16} color={colors.primary} />
-      </TouchableOpacity>
-    </ScrollView>
+        <Text style={styles.sectionLabel}>LOCATION</Text>
+        <View style={styles.infoCard}>
+          <InfoRow
+            icon="navigate"
+            label="Coordinates"
+            value={`${report.latitude.toFixed(5)}, ${report.longitude.toFixed(5)}`}
+          />
+          <View style={styles.divider} />
+          <InfoRow
+            icon="time"
+            label="Reported"
+            value={new Date(report.created_at).toLocaleString()}
+          />
+        </View>
+
+        <TouchableOpacity
+          style={styles.mapButton}
+          activeOpacity={0.85}
+          onPress={openMap}
+          accessibilityRole="button"
+          accessibilityLabel="View report location on map"
+        >
+          <Ionicons name="map" size={18} color={colors.primary} />
+          <Text style={styles.mapButtonText}>Open map</Text>
+          <Ionicons name="open-outline" size={16} color={colors.primary} />
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -142,13 +174,18 @@ function ToggleTab({
       style={[styles.tab, active && styles.tabActive]}
       onPress={onPress}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      accessibilityLabel={`${label} image`}
     >
       <Ionicons
         name={icon}
         size={15}
         color={active ? colors.white : colors.primaryDark}
       />
-      <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
+      <Text style={[styles.tabText, active && styles.tabTextActive]}>
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -176,6 +213,11 @@ function InfoRow({
 const styles = StyleSheet.create({
   body: {
     padding: spacing.lg,
+    paddingTop: spacing.xs,
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
   headerRow: {
     flexDirection: "row",
@@ -187,19 +229,20 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "800",
     color: colors.text,
+    letterSpacing: -0.3,
   },
   toggle: {
     flexDirection: "row",
     backgroundColor: colors.primarySoft,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     padding: 4,
     marginBottom: spacing.md,
   },
   tab: {
     flex: 1,
     flexDirection: "row",
-    paddingVertical: spacing.sm + 2,
-    borderRadius: radius.sm,
+    paddingVertical: spacing.sm + 3,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -217,16 +260,18 @@ const styles = StyleSheet.create({
   },
   imageCard: {
     backgroundColor: colors.card,
-    borderRadius: radius.lg,
+    borderRadius: radius.lg + 2,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: colors.border,
     ...shadow.card,
   },
   image: {
     width: "100%",
-    height: 300,
+    height: 320,
   },
   imageMissing: {
-    height: 300,
+    height: 320,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -236,16 +281,18 @@ const styles = StyleSheet.create({
   },
   detectionCard: {
     backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
+    borderRadius: radius.lg + 2,
+    padding: spacing.lg + 2,
     marginTop: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     ...shadow.card,
   },
   explainer: {
-    fontSize: 12.5,
+    fontSize: 13,
     color: colors.textMuted,
     marginTop: spacing.md,
-    lineHeight: 18,
+    lineHeight: 19,
   },
   statRow: {
     flexDirection: "row",
@@ -272,17 +319,20 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   sectionLabel: {
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 11.5,
+    fontWeight: "800",
     color: colors.textMuted,
     letterSpacing: 0.6,
     marginTop: spacing.xl,
     marginBottom: spacing.md,
+    textTransform: "uppercase",
   },
   statusCard: {
     backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
+    borderRadius: radius.lg + 2,
+    padding: spacing.lg + 2,
+    borderWidth: 1,
+    borderColor: colors.border,
     ...shadow.card,
   },
   officerNote: {
@@ -302,8 +352,10 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
+    borderRadius: radius.lg + 2,
+    padding: spacing.lg + 2,
+    borderWidth: 1,
+    borderColor: colors.border,
     ...shadow.card,
   },
   infoRow: {
@@ -339,12 +391,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.primarySoft,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.md + 2,
     marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: "rgba(15,138,76,0.1)",
   },
   mapButtonText: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: "700",
     color: colors.primary,
     marginHorizontal: spacing.sm,

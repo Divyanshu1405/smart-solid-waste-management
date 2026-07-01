@@ -14,12 +14,17 @@ export default function ConfidenceBar({ value, showLabel = true }: Props) {
   const width = Math.max(4, Math.min(100, c.pct));
 
   return (
-    <View style={styles.wrap}>
+    <View
+      style={styles.wrap}
+      accessibilityRole="progressbar"
+      accessibilityLabel={`AI confidence ${c.pct} percent, ${c.label}`}
+      accessibilityValue={{ min: 0, max: 100, now: c.pct }}
+    >
       {showLabel && (
         <View style={styles.labelRow}>
-          <Text style={styles.caption}>AI Confidence</Text>
+          <Text style={styles.caption}>AI confidence</Text>
           <Text style={[styles.pct, { color: c.fg }]}>
-            {c.pct}% · {c.label}
+            {c.pct}% • {c.label}
           </Text>
         </View>
       )}
@@ -40,19 +45,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: spacing.xs + 2,
+    marginBottom: spacing.xs + 4,
   },
   caption: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 11.5,
+    fontWeight: "700",
     color: colors.textMuted,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
   },
   pct: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: "800",
   },
   track: {
-    height: 8,
+    height: 10,
     borderRadius: radius.pill,
     backgroundColor: colors.border,
     overflow: "hidden",

@@ -1,31 +1,33 @@
+import type { ReportStatus } from "./types/status";
+
 // Central design tokens for the app. Keep colors/spacing here so screens stay consistent.
 
 export const colors = {
-  primary: "#16A34A",
-  primaryDark: "#15803D",
-  primarySoft: "#DCFCE7",
+  primary: "#0F8A4C",
+  primaryDark: "#0A5D34",
+  primarySoft: "#E6F7EE",
 
-  background: "#F2F7F4",
+  background: "#F5F8F5",
   card: "#FFFFFF",
-  border: "#E2E8F0",
+  border: "#DDE5DF",
 
-  text: "#0F172A",
-  textMuted: "#64748B",
+  text: "#102016",
+  textMuted: "#66707A",
   textOnPrimary: "#FFFFFF",
 
-  danger: "#EF4444",
-  dangerSoft: "#FEE2E2",
+  danger: "#DC2626",
+  dangerSoft: "#FDECEC",
   white: "#FFFFFF",
 
   // Report status palette
-  pending: "#F59E0B",
-  pendingSoft: "#FEF3C7",
-  inProgress: "#3B82F6",
+  pending: "#D97706",
+  pendingSoft: "#FEF2CC",
+  inProgress: "#2563EB",
   inProgressSoft: "#DBEAFE",
-  resolved: "#16A34A",
-  resolvedSoft: "#DCFCE7",
-  rejected: "#EF4444",
-  rejectedSoft: "#FEE2E2",
+  resolved: "#0F8A4C",
+  resolvedSoft: "#E6F7EE",
+  rejected: "#DC2626",
+  rejectedSoft: "#FDECEC",
 };
 
 export const spacing = {
@@ -46,21 +48,17 @@ export const radius = {
 
 export const shadow = {
   card: {
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: "#102016",
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowRadius: 18,
+    elevation: 5,
   },
 };
 
-export type StatusKey =
-  | "PENDING"
-  | "IN_PROGRESS"
-  | "RESOLVED"
-  | "REJECTED";
+export type StatusKey = ReportStatus;
 
-export function statusStyle(status: string) {
+export function statusStyle(status: ReportStatus) {
   switch (status) {
     case "RESOLVED":
       return {

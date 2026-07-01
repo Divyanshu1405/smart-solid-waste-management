@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project is an AI-powered garbage detection and reporting system that lets users report waste accumulation using a mobile app. It combines a YOLO-based object detection model, a FastAPI backend, and a React Native + Expo client.
+This project is an AI-powered garbage detection and reporting system that allows users to report waste accumulation using a mobile app. It combines a YOLO-based object detection model, a FastAPI backend, and a React Native + Expo client with typed navigation, report history, and annotated result views.
 
 ## Research Objective
 
@@ -14,11 +14,12 @@ This project implements the citizen reporting and AI-based waste detection core 
 
 **Implemented:**
 
-- Citizen mobile application with image capture and location tagging
+- Citizen mobile application with image capture, location tagging, and report review
 - Geotagged complaint reporting
 - YOLO-based garbage detection with bounding boxes
 - FastAPI backend with report management
 - PostgreSQL persistence
+- Annotated original and detection image views in the app
 
 **Planned Enhancements:**
 
@@ -53,9 +54,9 @@ If you want to train or retrain the model locally, place the downloaded dataset 
 
 ### Mobile App
 
-- Capture/Upload garbage images
+- Capture or upload images
 - Capture GPS location
-- Run garbage detection on upload
+- Analyze images on upload
 - View submitted reports
 - View report details
 - View original and annotated images
@@ -268,25 +269,37 @@ cd app
 npm install
 ```
 
-### 3. Configure the backend URL
+### 3. Backend URL configuration
 
-Open:
+The app now generates its API URL automatically when you start Expo.
 
-```text
-src/config/api.ts
+Use one of these commands from the `app` folder:
+
+```bash
+npm start
 ```
 
-Set `BASE_URL` to your machine's local network IP when testing on a physical device.
+or
 
-Example:
-
-```ts
-export const BASE_URL = "http://192.168.1.100:8000";
+```bash
+npm run android
 ```
 
-Do not use `localhost` or `127.0.0.1` on a phone.
+or
 
-If you are using an Android emulator, `10.0.2.2` can point to your host machine.
+```bash
+npm run ios
+```
+
+or
+
+```bash
+npm run web
+```
+
+The generated URL is written to `app/src/config/generatedApi.ts` and is ignored by git.
+
+If you move between networks or devices, rerun Expo so the generated URL is refreshed.
 
 ### 4. Start Expo
 
@@ -300,6 +313,7 @@ Make sure:
 
 - Phone and PC are on the same Wi-Fi network
 - Backend is running
+- If the app is already open, reload it after restarting Expo so the generated API URL is refreshed
 
 ## API Endpoints
 
@@ -325,7 +339,7 @@ Detect garbage in an uploaded image using the YOLO model.
 GET /reports
 ```
 
-Retrieve all submitted garbage reports with pagination support.
+Retrieve all submitted garbage reports.
 
 ### Get Report Details
 
@@ -361,19 +375,25 @@ User
 
 ## Development Notes
 
-**Repository Structure:**
+**Repository Notes:**
 
 - Empty directories are marked with `.gitkeep` files, allowing contributors to clone and begin working immediately without initialization scripts.
-- Git ignores large artifacts including model files, training outputs, dataset folders, and upload directories.
+- Git ignores large artifacts including model files, training outputs, dataset folders, evaluation outputs, and upload directories.
 
 **Setup Tips:**
 
-- Use `.env` file for local configuration; never commit secrets.
+- Use a `.env` file for local configuration; never commit secrets.
 - Ensure PostgreSQL is running before starting the backend.
 - Test the mobile app on a physical device or emulator on the same network as the backend server.
 - Place any trained model artifacts at `ml_models/best.pt`.
 - Place any project-specific run outputs in `runs/` or `weights/` only if they are meant to stay local.
 - The trained model is not shipped with the repo, so someone on the team must provide `ml_models/best.pt` before inference will work.
+
+**Development Notes:**
+
+- Run `npm run typecheck` from the `app` folder to validate the Expo client.
+- Run `uvicorn app:app --reload` from the `server` folder to start the API.
+- The mobile app uses typed navigation, shared status types, and safe URL joining for report images.
 
 ## License
 

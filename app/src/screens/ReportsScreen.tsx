@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   View,
@@ -11,45 +11,82 @@ import {
   ScrollView,
 } from "react-native";
 
+import { SafeAreaView } from "react-native-safe-area-context";
+
 import { Ionicons } from "@expo/vector-icons";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { Report } from "../types/report";
 import { getReports } from "../services/reportService";
 import { BASE_URL } from "../config/api";
+import { joinUrl } from "../utils/url";
 
 import StatusBadge from "../components/StatusBadge";
 import ConfidenceBar from "../components/ConfidenceBar";
 import { colors, radius, shadow, spacing } from "../theme";
+import type { RootStackParamList } from "../navigation/types";
+import type { ReportStatus } from "../types/status";
 
-const FILTERS = [
+const FILTERS: Array<{ key: FilterKey; label: string }> = [
   { key: "ALL", label: "All" },
   { key: "PENDING", label: "Pending" },
   { key: "IN_PROGRESS", label: "In Progress" },
   { key: "RESOLVED", label: "Resolved" },
 ];
 
-export default function ReportsScreen({ navigation }: any) {
+type FilterKey = ReportStatus | "ALL";
+
+type ReportsScreenProps = NativeStackScreenProps<RootStackParamList, "Reports">;
+
+export default function ReportsScreen({ navigation }: ReportsScreenProps) {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState("ALL");
+  const [filter, setFilter] = useState<FilterKey>("ALL");
+  const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", loadReports);
-    return unsubscribe;
-  }, [navigation]);
+  const loadReports = async (options?: { showLoading?: boolean }) => {
+    if (options?.showLoading) {
+      setLoading(true);
+    }
 
-  const loadReports = async () => {
+    setError(null);
+
     try {
       const data = await getReports();
+
+      if (!mountedRef.current) {
+        return;
+      }
+
       setReports(data);
-    } catch (error) {
-      console.log(error);
+    } catch {
+      if (mountedRef.current) {
+        setError("Unable to load reports.");
+      }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (mountedRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   };
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    void loadReports({ showLoading: true });
+
+    const unsubscribe = navigation.addListener("focus", () => {
+      void loadReports();
+    });
+
+    return () => {
+      mountedRef.current = false;
+      unsubscribe();
+    };
+  }, [navigation]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -66,9 +103,35 @@ export default function ReportsScreen({ navigation }: any) {
   );
 
   const filtered = useMemo(
-    () => (filter === "ALL" ? reports : reports.filter((r) => r.status === filter)),
+    () =>
+      filter === "ALL" ? reports : reports.filter((r) => r.status === filter),
     [reports, filter],
   );
+
+  if (error && reports.length === 0 && !loading) {
+    return (
+      <View style={styles.errorState}>
+        <Ionicons
+          name="cloud-offline-outline"
+          size={56}
+          color={colors.textMuted}
+        />
+        <Text style={styles.emptyTitle}>Could not load reports</Text>
+        <Text style={styles.emptyText}>{error}</Text>
+        <View style={styles.retryWrap}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => void loadReports({ showLoading: true })}
+            style={styles.retryButton}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading reports"
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   if (loading) {
     return (
@@ -85,7 +148,11 @@ export default function ReportsScreen({ navigation }: any) {
       <View style={styles.statsRow}>
         <StatCard value={stats.total} label="Total" tint={colors.text} />
         <StatCard value={stats.pending} label="Pending" tint={colors.pending} />
-        <StatCard value={stats.resolved} label="Resolved" tint={colors.resolved} />
+        <StatCard
+          value={stats.resolved}
+          label="Resolved"
+          tint={colors.resolved}
+        />
       </View>
 
       <ScrollView
@@ -101,6 +168,9 @@ export default function ReportsScreen({ navigation }: any) {
               activeOpacity={0.8}
               onPress={() => setFilter(f.key)}
               style={[styles.chip, active && styles.chipActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`Filter reports by ${f.label}`}
             >
               <Text style={[styles.chipText, active && styles.chipTextActive]}>
                 {f.label}
@@ -113,80 +183,103 @@ export default function ReportsScreen({ navigation }: any) {
   );
 
   return (
-    <FlatList
-      data={filtered}
-      keyExtractor={(item) => item.id.toString()}
-      contentContainerStyle={styles.list}
-      ListHeaderComponent={Header}
-      ListEmptyComponent={
-        <View style={styles.emptyInline}>
-          <Ionicons
-            name={reports.length === 0 ? "file-tray-outline" : "search-outline"}
-            size={56}
-            color={colors.textMuted}
-          />
-          <Text style={styles.emptyTitle}>
-            {reports.length === 0 ? "No reports yet" : "No matching reports"}
-          </Text>
-          <Text style={styles.emptyText}>
-            {reports.length === 0
-              ? "Submit your first garbage report from the Home screen."
-              : "Try a different filter."}
-          </Text>
-        </View>
-      }
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          colors={[colors.primary]}
-          tintColor={colors.primary}
-        />
-      }
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={() => navigation.navigate("ReportDetails", { report: item })}
-          style={styles.card}
-        >
-          <View style={styles.cardTop}>
-            <Image
-              source={{ uri: BASE_URL + item.original_image_url }}
-              style={styles.thumb}
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <FlatList
+        data={filtered}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.list}
+        ListHeaderComponent={Header}
+        ListEmptyComponent={
+          <View style={styles.emptyInline}>
+            <Ionicons
+              name={
+                reports.length === 0 ? "file-tray-outline" : "search-outline"
+              }
+              size={56}
+              color={colors.textMuted}
             />
+            <Text style={styles.emptyTitle}>
+              {reports.length === 0 ? "No reports yet" : "No matching reports"}
+            </Text>
+            <Text style={styles.emptyText}>
+              {reports.length === 0
+                ? "Submit your first report from the Home screen."
+                : "Try a different filter."}
+            </Text>
+          </View>
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() =>
+              navigation.navigate("ReportDetails", { report: item })
+            }
+            style={styles.card}
+            accessibilityRole="button"
+            accessibilityLabel={`Open report ${item.id}`}
+          >
+            <View style={styles.cardTop}>
+              <Image
+                source={{ uri: joinUrl(BASE_URL, item.original_image_url) }}
+                style={styles.thumb}
+              />
 
-            <View style={styles.cardBody}>
-              <View style={styles.cardTopRow}>
-                <Text style={styles.reportId}>Report #{item.id}</Text>
-                <StatusBadge status={item.status} />
+              <View style={styles.cardBody}>
+                <View style={styles.cardTopRow}>
+                  <Text style={styles.reportId}>Report #{item.id}</Text>
+                  <StatusBadge status={item.status} />
+                </View>
+
+                <View style={styles.metaRow}>
+                  <Ionicons
+                    name="trash-outline"
+                    size={14}
+                    color={colors.textMuted}
+                  />
+                  <Text style={styles.metaText}>
+                    {item.garbage_count} items found
+                  </Text>
+                </View>
+
+                <View style={styles.metaRow}>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={14}
+                    color={colors.textMuted}
+                  />
+                  <Text style={styles.metaText}>
+                    {new Date(item.created_at).toLocaleDateString()}
+                    {"  "}
+                    {new Date(item.created_at).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </Text>
+                </View>
               </View>
 
-              <View style={styles.metaRow}>
-                <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
-                <Text style={styles.metaText}>{item.garbage_count} items detected</Text>
-              </View>
-
-              <View style={styles.metaRow}>
-                <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
-                <Text style={styles.metaText}>
-                  {new Date(item.created_at).toLocaleDateString()}{"  "}
-                  {new Date(item.created_at).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </Text>
-              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={22}
+                color={colors.textMuted}
+              />
             </View>
 
-            <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
-          </View>
-
-          <View style={styles.cardConfidence}>
-            <ConfidenceBar value={item.highest_confidence} />
-          </View>
-        </TouchableOpacity>
-      )}
-    />
+            <View style={styles.cardConfidence}>
+              <ConfidenceBar value={item.highest_confidence} />
+            </View>
+          </TouchableOpacity>
+        )}
+      />
+    </SafeAreaView>
   );
 }
 
@@ -226,37 +319,48 @@ function SkeletonCard() {
 const styles = StyleSheet.create({
   list: {
     padding: spacing.lg,
+    paddingTop: spacing.xs,
     flexGrow: 1,
+    backgroundColor: colors.background,
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
   statsRow: {
     flexDirection: "row",
     marginBottom: spacing.md,
+    gap: spacing.sm,
   },
   statCard: {
     flex: 1,
     backgroundColor: colors.card,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.md + 2,
     alignItems: "center",
-    marginHorizontal: spacing.xs,
+    marginHorizontal: 0,
+    borderWidth: 1,
+    borderColor: colors.border,
     ...shadow.card,
   },
   statValue: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "800",
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: colors.textMuted,
     marginTop: 2,
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
   },
   chipsRow: {
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.sm + 2,
     paddingRight: spacing.lg,
   },
   chip: {
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.sm + 2,
     borderRadius: radius.pill,
     backgroundColor: colors.card,
     borderWidth: 1,
@@ -277,9 +381,11 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: spacing.md,
+    borderRadius: radius.lg + 2,
+    padding: spacing.md + 2,
     marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
     ...shadow.card,
   },
   cardTop: {
@@ -287,14 +393,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   thumb: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.md,
+    width: 76,
+    height: 76,
+    borderRadius: radius.lg,
     backgroundColor: colors.border,
   },
   cardBody: {
     flex: 1,
-    marginLeft: spacing.md,
+    marginLeft: spacing.md + 2,
   },
   cardTopRow: {
     flexDirection: "row",
@@ -302,7 +408,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   reportId: {
-    fontSize: 16,
+    fontSize: 15.5,
     fontWeight: "800",
     color: colors.text,
   },
@@ -312,7 +418,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   metaText: {
-    fontSize: 13,
+    fontSize: 12.5,
     color: colors.textMuted,
     fontWeight: "600",
     marginLeft: spacing.xs + 2,
@@ -325,7 +431,13 @@ const styles = StyleSheet.create({
   },
   emptyInline: {
     alignItems: "center",
-    paddingVertical: spacing.xxl,
+    paddingVertical: spacing.xxl + 8,
+  },
+  errorState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing.xl,
   },
   emptyTitle: {
     fontSize: 18,
@@ -338,6 +450,20 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: "center",
     marginTop: spacing.xs,
+  },
+  retryWrap: {
+    marginTop: spacing.lg,
+  },
+  retryButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.pill,
+  },
+  retryButtonText: {
+    color: colors.white,
+    fontSize: 13,
+    fontWeight: "700",
   },
   skel: {
     backgroundColor: colors.border,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   View,
@@ -6,31 +6,66 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { getReports } from "../services/reportService";
 import { colors, radius, shadow, spacing } from "../theme";
+import type { RootStackParamList } from "../navigation/types";
+import type { ReportStatus } from "../types/status";
 
-export default function HomeScreen({ navigation }: any) {
+type HomeScreenProps = NativeStackScreenProps<RootStackParamList, "Home">;
+
+export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [stats, setStats] = useState({ total: 0, pending: 0, resolved: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+
+  const loadStats = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await getReports();
+
+      if (!mountedRef.current) {
+        return;
+      }
+
+      setStats({
+        total: data.length,
+        pending: countReportsWithStatus(data, "PENDING"),
+        resolved: countReportsWithStatus(data, "RESOLVED"),
+      });
+    } catch {
+      if (mountedRef.current) {
+        setError("Unable to load dashboard stats.");
+      }
+    } finally {
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+    }
+  };
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", async () => {
-      try {
-        const data = await getReports();
-        setStats({
-          total: data.length,
-          pending: data.filter((r: any) => r.status === "PENDING").length,
-          resolved: data.filter((r: any) => r.status === "RESOLVED").length,
-        });
-      } catch {
-        // offline / backend down — leave stats at zero
-      }
+    mountedRef.current = true;
+
+    const unsubscribe = navigation.addListener("focus", () => {
+      void loadStats();
     });
-    return unsubscribe;
+
+    void loadStats();
+
+    return () => {
+      mountedRef.current = false;
+      unsubscribe();
+    };
   }, [navigation]);
 
   return (
@@ -43,18 +78,51 @@ export default function HomeScreen({ navigation }: any) {
                 <Ionicons name="leaf" size={22} color={colors.white} />
               </View>
               <View style={{ marginLeft: spacing.md }}>
-                <Text style={styles.heroTitle}>CleanCity</Text>
-                <Text style={styles.heroSubtitle}>AI garbage detection</Text>
+                <Text style={styles.heroTitle}>WasteWatch</Text>
+                <Text style={styles.heroSubtitle}>Garbage reporting</Text>
               </View>
             </View>
 
+            <Text style={styles.heroLead}>
+              Capture a dumping spot, submit it in seconds, and track cleanup
+              status.
+            </Text>
+
             <View style={styles.statStrip}>
-              <HeroStat value={stats.total} label="Reports" />
+              <HeroStat value={loading ? null : stats.total} label="Reports" />
               <View style={styles.statDivider} />
-              <HeroStat value={stats.pending} label="Pending" />
+              <HeroStat
+                value={loading ? null : stats.pending}
+                label="Pending"
+              />
               <View style={styles.statDivider} />
-              <HeroStat value={stats.resolved} label="Resolved" />
+              <HeroStat
+                value={loading ? null : stats.resolved}
+                label="Resolved"
+              />
             </View>
+
+            {error ? (
+              <View style={styles.heroError}>
+                <Text style={styles.heroErrorText}>{error}</Text>
+                <TouchableOpacity
+                  style={styles.heroRetry}
+                  onPress={loadStats}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry loading dashboard stats"
+                >
+                  <Text style={styles.heroRetryText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : loading ? (
+              <View style={styles.heroLoadingRow}>
+                <ActivityIndicator color={colors.white} />
+                <Text style={styles.heroLoadingText}>
+                  Loading recent reports...
+                </Text>
+              </View>
+            ) : null}
           </View>
         </SafeAreaView>
       </View>
@@ -66,8 +134,8 @@ export default function HomeScreen({ navigation }: any) {
           icon="camera"
           tint={colors.primary}
           tintSoft={colors.primarySoft}
-          title="Report Garbage"
-          desc="Capture or upload a photo and let AI detect waste."
+          title="Submit Report"
+          desc="Capture or upload a photo for analysis."
           onPress={() => navigation.navigate("Report")}
         />
 
@@ -75,30 +143,46 @@ export default function HomeScreen({ navigation }: any) {
           icon="list"
           tint={colors.inProgress}
           tintSoft={colors.inProgressSoft}
-          title="View Reports"
-          desc="Browse submitted reports and detection results."
+          title="Reports"
+          desc="Browse submitted reports and their results."
           onPress={() => navigation.navigate("Reports")}
         />
 
         <View style={styles.tipCard}>
           <Text style={styles.tipTitle}>How it works</Text>
-          <TipStep icon="camera-outline" text="Take a photo of accumulated garbage" />
-          <TipStep icon="location-outline" text="We tag it with your GPS location" />
-          <TipStep icon="scan-outline" text="AI detects & marks the waste" />
-          <TipStep icon="checkmark-done-outline" text="Track the report to resolution" />
+          <TipStep
+            icon="camera-outline"
+            text="Take a clear photo of the area"
+          />
+          <TipStep
+            icon="location-outline"
+            text="We attach your location automatically"
+          />
+          <TipStep icon="scan-outline" text="AI checks for garbage" />
+          <TipStep
+            icon="checkmark-done-outline"
+            text="Track the report until it is closed"
+          />
         </View>
       </ScrollView>
     </View>
   );
 }
 
-function HeroStat({ value, label }: { value: number; label: string }) {
+function HeroStat({ value, label }: { value: number | null; label: string }) {
   return (
     <View style={styles.heroStat}>
-      <Text style={styles.heroStatValue}>{value}</Text>
+      <Text style={styles.heroStatValue}>{value === null ? "--" : value}</Text>
       <Text style={styles.heroStatLabel}>{label}</Text>
     </View>
   );
+}
+
+function countReportsWithStatus(
+  reports: { status: ReportStatus }[],
+  status: ReportStatus,
+) {
+  return reports.filter((report) => report.status === status).length;
 }
 
 function ActionCard({
@@ -117,7 +201,13 @@ function ActionCard({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity activeOpacity={0.9} style={styles.actionCard} onPress={onPress}>
+    <TouchableOpacity
+      activeOpacity={0.9}
+      style={styles.actionCard}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${desc}`}
+    >
       <View style={[styles.actionIcon, { backgroundColor: tintSoft }]}>
         <Ionicons name={icon} size={24} color={tint} />
       </View>
@@ -154,83 +244,135 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderBottomLeftRadius: radius.lg,
     borderBottomRightRadius: radius.lg,
+    overflow: "hidden",
   },
   heroInner: {
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingTop: spacing.lg + 2,
+    paddingBottom: spacing.xl + 4,
   },
   brandRow: {
     flexDirection: "row",
     alignItems: "center",
   },
   logoCircle: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     borderRadius: radius.pill,
     backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
   },
   heroTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "800",
     color: colors.white,
+    letterSpacing: -0.4,
   },
   heroSubtitle: {
-    fontSize: 13,
+    fontSize: 12.5,
     color: colors.primarySoft,
-    marginTop: 1,
+    marginTop: 2,
+  },
+  heroLead: {
+    color: colors.white,
+    fontSize: 15,
+    lineHeight: 21,
+    marginTop: spacing.lg,
+    maxWidth: 310,
+    opacity: 0.94,
   },
   statStrip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.14)",
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
+    backgroundColor: "rgba(255,255,255,0.16)",
+    borderRadius: radius.lg,
+    paddingVertical: spacing.md + 2,
     marginTop: spacing.xl,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
   },
   heroStat: {
     flex: 1,
     alignItems: "center",
   },
   heroStatValue: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "800",
     color: colors.white,
   },
   heroStatLabel: {
-    fontSize: 11,
+    fontSize: 10.5,
     color: colors.primarySoft,
-    marginTop: 1,
+    marginTop: 2,
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
   },
   statDivider: {
     width: 1,
     height: 28,
     backgroundColor: "rgba(255,255,255,0.25)",
   },
-  body: {
-    padding: spacing.lg,
+  heroLoadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: spacing.md,
   },
-  sectionLabel: {
+  heroLoadingText: {
+    color: colors.white,
+    marginLeft: spacing.sm,
+    fontSize: 12,
+  },
+  heroError: {
+    marginTop: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: "rgba(255,255,255,0.16)",
+  },
+  heroErrorText: {
+    color: colors.white,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  heroRetry: {
+    alignSelf: "flex-start",
+    marginTop: spacing.sm,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+  },
+  heroRetryText: {
+    color: colors.primaryDark,
     fontSize: 12,
     fontWeight: "700",
+  },
+  body: {
+    padding: spacing.lg,
+    paddingTop: spacing.xl,
+  },
+  sectionLabel: {
+    fontSize: 11.5,
+    fontWeight: "800",
     color: colors.textMuted,
     letterSpacing: 0.6,
     marginBottom: spacing.md,
+    textTransform: "uppercase",
   },
   actionCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: colors.card,
     borderRadius: radius.lg,
-    padding: spacing.lg,
+    padding: spacing.lg + 2,
     marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
     ...shadow.card,
   },
   actionIcon: {
-    width: 52,
-    height: 52,
+    width: 56,
+    height: 56,
     borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
@@ -240,23 +382,26 @@ const styles = StyleSheet.create({
     marginLeft: spacing.lg,
   },
   actionTitle: {
-    fontSize: 17,
+    fontSize: 16.5,
     fontWeight: "700",
     color: colors.text,
   },
   actionDesc: {
-    fontSize: 13,
+    fontSize: 13.5,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: 4,
+    lineHeight: 18,
   },
   tipCard: {
     backgroundColor: colors.primarySoft,
     borderRadius: radius.lg,
-    padding: spacing.lg,
+    padding: spacing.lg + 2,
     marginTop: spacing.sm,
+    borderWidth: 1,
+    borderColor: "rgba(15,138,76,0.12)",
   },
   tipTitle: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: "800",
     color: colors.primaryDark,
     marginBottom: spacing.md,
@@ -270,5 +415,6 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     color: colors.primaryDark,
     marginLeft: spacing.sm,
+    lineHeight: 18,
   },
 });

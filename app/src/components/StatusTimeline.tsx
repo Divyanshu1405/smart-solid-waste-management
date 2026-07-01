@@ -1,9 +1,9 @@
-import { Fragment } from "react";
 import { View, Text, StyleSheet } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
 
 import { colors, radius, spacing, statusStyle } from "../theme";
+import type { ReportStatus } from "../types/status";
 
 const STEPS = [
   { key: "PENDING", label: "Pending", icon: "time" as const },
@@ -11,7 +11,7 @@ const STEPS = [
   { key: "RESOLVED", label: "Resolved", icon: "checkmark-done" as const },
 ];
 
-const ORDER: Record<string, number> = {
+const ORDER: Record<Exclude<ReportStatus, "REJECTED">, number> = {
   PENDING: 0,
   IN_PROGRESS: 1,
   RESOLVED: 2,
@@ -19,7 +19,7 @@ const ORDER: Record<string, number> = {
 
 // Read-only progress indicator. Status itself is changed by officers via the
 // dashboard, never from the app.
-export default function StatusTimeline({ status }: { status: string }) {
+export default function StatusTimeline({ status }: { status: ReportStatus }) {
   if (status === "REJECTED") {
     const s = statusStyle(status);
     return (
@@ -35,7 +35,7 @@ export default function StatusTimeline({ status }: { status: string }) {
     );
   }
 
-  const current = ORDER[status] ?? 0;
+  const current = ORDER[status];
 
   return (
     <View style={styles.row}>
@@ -57,8 +57,14 @@ export default function StatusTimeline({ status }: { status: string }) {
                 style={[
                   styles.circle,
                   done
-                    ? { backgroundColor: colors.primary, borderColor: colors.primary }
-                    : { backgroundColor: colors.card, borderColor: colors.border },
+                    ? {
+                        backgroundColor: colors.primary,
+                        borderColor: colors.primary,
+                      }
+                    : {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
                 ]}
               >
                 <Ionicons
@@ -134,14 +140,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: radius.md,
     padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.rejectedSoft,
   },
   rejectedTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "800",
+    letterSpacing: 0.2,
   },
   rejectedNote: {
-    fontSize: 12.5,
+    fontSize: 12,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: 4,
+    lineHeight: 17,
   },
 });

@@ -1,13 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import {
-  View,
-  Text,
-  Alert,
-  Image,
-  StyleSheet,
-  ScrollView,
-} from "react-native";
+import { View, Text, Alert, Image, StyleSheet, ScrollView } from "react-native";
+
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
@@ -24,11 +19,18 @@ export default function ReportScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DetectionResponse | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const pickImage = async () => {
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 1,
+      quality: 0.8,
     });
 
     if (!res.canceled) {
@@ -47,7 +49,7 @@ export default function ReportScreen() {
 
     const res = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 1,
+      quality: 0.8,
     });
 
     if (!res.canceled) {
@@ -80,12 +82,15 @@ export default function ReportScreen() {
         location.coords.longitude,
       );
 
-      setResult(response);
-    } catch (error) {
-      console.log(error);
+      if (mountedRef.current) {
+        setResult(response);
+      }
+    } catch {
       Alert.alert("Detection failed", "Could not reach the server. Try again.");
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -95,112 +100,206 @@ export default function ReportScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.body}>
-      <View style={styles.previewCard}>
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.preview} />
-        ) : (
-          <View style={styles.placeholder}>
-            <Ionicons name="image-outline" size={56} color={colors.textMuted} />
-            <Text style={styles.placeholderText}>No image selected</Text>
-            <Text style={styles.placeholderHint}>
-              Take a photo or choose one from your gallery
-            </Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.actions}>
-        <View style={styles.actionHalf}>
-          <AppButton title="Camera" icon="camera" onPress={takePhoto} />
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <ScrollView contentContainerStyle={styles.body}>
+        <View style={styles.pageHeader}>
+          <Text style={styles.kicker}>Submit report</Text>
+          <Text style={styles.pageTitle}>Capture and analyze</Text>
+          <Text style={styles.pageSubtitle}>
+            Use a clear photo so the app can check it quickly.
+          </Text>
         </View>
-        <View style={styles.gap} />
-        <View style={styles.actionHalf}>
+
+        <View style={styles.previewCard}>
+          <View style={styles.previewHeader}>
+            <Text style={styles.previewLabel}>Photo</Text>
+            <Text style={styles.previewHint}>Step 1 of 3</Text>
+          </View>
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={styles.preview} />
+          ) : (
+            <View style={styles.placeholder}>
+              <Ionicons
+                name="image-outline"
+                size={56}
+                color={colors.textMuted}
+              />
+              <Text style={styles.placeholderText}>No photo selected</Text>
+              <Text style={styles.placeholderHint}>
+                Take a photo or choose one from your gallery
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <Text style={styles.sectionLabel}>Choose source</Text>
+        <View style={styles.actions}>
+          <View style={styles.actionHalf}>
+            <AppButton title="Camera" icon="camera" onPress={takePhoto} />
+          </View>
+          <View style={styles.gap} />
+          <View style={styles.actionHalf}>
+            <AppButton
+              title="Gallery"
+              icon="images"
+              variant="secondary"
+              onPress={pickImage}
+            />
+          </View>
+        </View>
+
+        <View style={styles.submitWrap}>
           <AppButton
-            title="Gallery"
-            icon="images"
-            variant="secondary"
-            onPress={pickImage}
+            title={loading ? "Analyzing..." : "Analyze report"}
+            icon={loading ? undefined : "scan"}
+            loading={loading}
+            disabled={!imageUri}
+            onPress={submitReport}
           />
         </View>
-      </View>
 
-      <View style={styles.submitWrap}>
-        <AppButton
-          title={loading ? "Analyzing…" : "Submit & Detect"}
-          icon={loading ? undefined : "scan"}
-          loading={loading}
-          disabled={!imageUri}
-          onPress={submitReport}
-        />
-      </View>
+        {result && (
+          <View
+            style={[
+              styles.resultCard,
+              {
+                backgroundColor: result.garbage_detected
+                  ? colors.resolvedSoft
+                  : colors.pendingSoft,
+              },
+            ]}
+          >
+            <View style={styles.resultHeader}>
+              <View style={styles.resultBadge}>
+                <Ionicons
+                  name={result.garbage_detected ? "checkmark" : "time"}
+                  size={12}
+                  color={
+                    result.garbage_detected ? colors.resolved : colors.pending
+                  }
+                />
+                <Text style={styles.resultBadgeText}>
+                  {result.garbage_detected
+                    ? "Garbage found"
+                    : "No garbage found"}
+                </Text>
+              </View>
+              <Text style={styles.resultMeta}>Step 3 of 3</Text>
+            </View>
 
-      {result && (
-        <View
-          style={[
-            styles.resultCard,
-            {
-              backgroundColor: result.garbage_detected
-                ? colors.resolvedSoft
-                : colors.pendingSoft,
-            },
-          ]}
-        >
-          <View style={styles.resultTitleRow}>
-            <Ionicons
-              name={result.garbage_detected ? "checkmark-circle" : "alert-circle"}
-              size={24}
-              color={result.garbage_detected ? colors.resolved : colors.pending}
-            />
-            <Text style={styles.resultTitle}>
-              {result.garbage_detected ? "Garbage Detected" : "No Garbage Detected"}
+            <View style={styles.resultTitleRow}>
+              <Ionicons
+                name={
+                  result.garbage_detected ? "checkmark-circle" : "alert-circle"
+                }
+                size={24}
+                color={
+                  result.garbage_detected ? colors.resolved : colors.pending
+                }
+              />
+              <Text style={styles.resultTitle}>
+                {result.garbage_detected ? "Garbage found" : "No garbage found"}
+              </Text>
+            </View>
+
+            <View style={styles.resultRow}>
+              <View style={styles.metric}>
+                <Text style={styles.metricValue}>{result.garbage_count}</Text>
+                <Text style={styles.metricLabel}>Items found</Text>
+              </View>
+              <View style={styles.metric}>
+                <Text style={styles.metricValue}>#{result.report_id}</Text>
+                <Text style={styles.metricLabel}>Report ID</Text>
+              </View>
+            </View>
+
+            <View style={styles.confidenceWrap}>
+              <ConfidenceBar value={result.highest_confidence} />
+            </View>
+
+            <Text style={styles.savedNote}>
+              Saved to reports. Open Reports to view the marked image.
             </Text>
-          </View>
 
-          <View style={styles.resultRow}>
-            <View style={styles.metric}>
-              <Text style={styles.metricValue}>{result.garbage_count}</Text>
-              <Text style={styles.metricLabel}>Items</Text>
-            </View>
-            <View style={styles.metric}>
-              <Text style={styles.metricValue}>#{result.report_id}</Text>
-              <Text style={styles.metricLabel}>Report ID</Text>
+            <View style={{ marginTop: spacing.md }}>
+              <AppButton
+                title="Report Another"
+                variant="secondary"
+                onPress={reset}
+              />
             </View>
           </View>
-
-          <View style={styles.confidenceWrap}>
-            <ConfidenceBar value={result.highest_confidence} />
-          </View>
-
-          <Text style={styles.savedNote}>
-            Saved to reports. View it in the Reports list to see the annotated image.
-          </Text>
-
-          <View style={{ marginTop: spacing.md }}>
-            <AppButton title="Report Another" variant="secondary" onPress={reset} />
-          </View>
-        </View>
-      )}
-    </ScrollView>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   body: {
     padding: spacing.lg,
+    paddingTop: spacing.xs,
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  pageHeader: {
+    marginBottom: spacing.lg,
+  },
+  kicker: {
+    fontSize: 11.5,
+    fontWeight: "800",
+    color: colors.primaryDark,
+    letterSpacing: 0.7,
+    textTransform: "uppercase",
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: colors.text,
+    letterSpacing: -0.3,
+    marginTop: 2,
+  },
+  pageSubtitle: {
+    fontSize: 13.5,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+    lineHeight: 18,
+    maxWidth: 320,
   },
   previewCard: {
     backgroundColor: colors.card,
-    borderRadius: radius.lg,
+    borderRadius: radius.lg + 2,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: colors.border,
     ...shadow.card,
+  },
+  previewHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+  previewLabel: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: colors.text,
+  },
+  previewHint: {
+    fontSize: 11.5,
+    fontWeight: "700",
+    color: colors.textMuted,
   },
   preview: {
     width: "100%",
-    height: 280,
+    height: 300,
   },
   placeholder: {
-    height: 280,
+    height: 300,
     alignItems: "center",
     justifyContent: "center",
     padding: spacing.lg,
@@ -230,10 +329,50 @@ const styles = StyleSheet.create({
   submitWrap: {
     marginTop: spacing.md,
   },
+  sectionLabel: {
+    fontSize: 11.5,
+    fontWeight: "800",
+    color: colors.textMuted,
+    letterSpacing: 0.7,
+    textTransform: "uppercase",
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
   resultCard: {
     marginTop: spacing.xl,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
+    borderRadius: radius.lg + 2,
+    padding: spacing.lg + 2,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.04)",
+  },
+  resultHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: spacing.md,
+  },
+  resultBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.card,
+  },
+  resultBadgeText: {
+    fontSize: 11.5,
+    fontWeight: "800",
+    color: colors.text,
+    marginLeft: spacing.xs,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  resultMeta: {
+    fontSize: 11.5,
+    fontWeight: "800",
+    color: colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   resultTitleRow: {
     flexDirection: "row",
@@ -271,5 +410,6 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     color: colors.textMuted,
     marginTop: spacing.lg,
+    lineHeight: 18,
   },
 });

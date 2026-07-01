@@ -19,6 +19,7 @@ interface Props {
   icon?: keyof typeof Ionicons.glyphMap;
   loading?: boolean;
   disabled?: boolean;
+  accessibilityLabel?: string;
 }
 
 export default function AppButton({
@@ -28,6 +29,7 @@ export default function AppButton({
   icon,
   loading = false,
   disabled = false,
+  accessibilityLabel,
 }: Props) {
   const isPrimary = variant === "primary";
   const isDanger = variant === "danger";
@@ -38,17 +40,21 @@ export default function AppButton({
       ? colors.danger
       : colors.white;
 
-  const fg = isPrimary || isDanger ? colors.white : colors.primary;
+  const fg = isPrimary || isDanger ? colors.white : colors.primaryDark;
 
   return (
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={onPress}
       disabled={disabled || loading}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? title}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       style={[
         styles.base,
         { backgroundColor: bg },
         variant === "secondary" && styles.secondaryBorder,
+        isPrimary && styles.primaryShadow,
         (disabled || loading) && styles.disabled,
       ]}
     >
@@ -68,15 +74,22 @@ export default function AppButton({
 
 const styles = StyleSheet.create({
   base: {
-    height: 52,
-    borderRadius: radius.md,
+    minHeight: 54,
+    borderRadius: radius.lg,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.xl,
   },
   secondaryBorder: {
-    borderWidth: 1.5,
-    borderColor: colors.primary,
+    borderWidth: 1.2,
+    borderColor: colors.border,
+  },
+  primaryShadow: {
+    shadowColor: colors.primaryDark,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    elevation: 4,
   },
   disabled: {
     opacity: 0.5,
@@ -89,7 +102,8 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
   },
   label: {
-    fontSize: 16,
+    fontSize: 15.5,
     fontWeight: "700",
+    letterSpacing: 0.2,
   },
 });
