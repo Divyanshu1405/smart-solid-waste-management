@@ -5,7 +5,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { radius, spacing, statusStyle } from "../theme";
 import type { ReportStatus } from "../types/status";
 
-export default function StatusBadge({ status }: { status: ReportStatus }) {
+export default function StatusBadge({
+  status,
+}: {
+  status: ReportStatus | "NO_GARBAGE";
+}) {
   const s = statusStyle(status);
 
   return (

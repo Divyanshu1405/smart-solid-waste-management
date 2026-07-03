@@ -12,7 +12,7 @@ import { detectGarbage } from "../services/detectionService";
 import { DetectionResponse } from "../types/detection";
 
 import AppButton from "../components/AppButton";
-import ConfidenceBar from "../components/ConfidenceBar";
+import DetectionConfidence from "../components/DetectionConfidence";
 import { colors, radius, shadow, spacing } from "../theme";
 
 export default function ReportScreen() {
@@ -214,7 +214,10 @@ export default function ReportScreen() {
             </View>
 
             <View style={styles.confidenceWrap}>
-              <ConfidenceBar value={result.highest_confidence} />
+              <DetectionConfidence
+                detected={result.garbage_detected}
+                value={result.highest_confidence}
+              />
             </View>
 
             <Text style={styles.savedNote}>
