@@ -22,7 +22,7 @@ import { BASE_URL } from "../config/api";
 import { joinUrl } from "../utils/url";
 
 import StatusBadge from "../components/StatusBadge";
-import ConfidenceBar from "../components/ConfidenceBar";
+import DetectionConfidence from "../components/DetectionConfidence";
 import { colors, radius, shadow, spacing } from "../theme";
 import type { RootStackParamList } from "../navigation/types";
 import type { ReportStatus } from "../types/status";
@@ -235,7 +235,9 @@ export default function ReportsScreen({ navigation }: ReportsScreenProps) {
               <View style={styles.cardBody}>
                 <View style={styles.cardTopRow}>
                   <Text style={styles.reportId}>Report #{item.id}</Text>
-                  <StatusBadge status={item.status} />
+                  <StatusBadge
+                    status={item.garbage_detected ? item.status : "NO_GARBAGE"}
+                  />
                 </View>
 
                 <View style={styles.metaRow}>
@@ -274,7 +276,10 @@ export default function ReportsScreen({ navigation }: ReportsScreenProps) {
             </View>
 
             <View style={styles.cardConfidence}>
-              <ConfidenceBar value={item.highest_confidence} />
+              <DetectionConfidence
+                detected={item.garbage_detected}
+                value={item.highest_confidence}
+              />
             </View>
           </TouchableOpacity>
         )}

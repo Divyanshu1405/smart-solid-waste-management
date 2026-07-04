@@ -19,7 +19,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { BASE_URL } from "../config/api";
 import StatusBadge from "../components/StatusBadge";
 import StatusTimeline from "../components/StatusTimeline";
-import ConfidenceBar from "../components/ConfidenceBar";
+import DetectionConfidence from "../components/DetectionConfidence";
 import { colors, radius, shadow, spacing } from "../theme";
 import type { RootStackParamList } from "../navigation/types";
 import { joinUrl } from "../utils/url";
@@ -34,7 +34,10 @@ export default function ReportDetailsScreen({
 }: ReportDetailsScreenProps) {
   const { report } = route.params;
 
-  const [view, setView] = useState<"annotated" | "original">("annotated");
+  // No boxes are drawn when nothing is detected, so default to the original.
+  const [view, setView] = useState<"annotated" | "original">(
+    report.garbage_detected ? "annotated" : "original",
+  );
 
   const imageUrl =
     view === "annotated"
@@ -53,7 +56,9 @@ export default function ReportDetailsScreen({
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.headerRow}>
           <Text style={styles.title}>Report #{report.id}</Text>
-          <StatusBadge status={report.status} />
+          <StatusBadge
+            status={report.garbage_detected ? report.status : "NO_GARBAGE"}
+          />
         </View>
 
         <View style={styles.toggle}>
@@ -90,9 +95,14 @@ export default function ReportDetailsScreen({
         </View>
 
         <View style={styles.detectionCard}>
-          <ConfidenceBar value={report.highest_confidence} />
+          <DetectionConfidence
+            detected={report.garbage_detected}
+            value={report.highest_confidence}
+          />
           <Text style={styles.explainer}>
-            How sure the app is that garbage is present.
+            {report.garbage_detected
+              ? "How sure the app is that garbage is present."
+              : "No garbage was detected — showing the original photo."}
           </Text>
 
           <View style={styles.divider} />
@@ -114,17 +124,33 @@ export default function ReportDetailsScreen({
 
         <Text style={styles.sectionLabel}>STATUS</Text>
         <View style={styles.statusCard}>
-          <StatusTimeline status={report.status} />
-          <View style={styles.officerNote}>
-            <Ionicons
-              name="information-circle-outline"
-              size={15}
-              color={colors.textMuted}
-            />
-            <Text style={styles.officerNoteText}>
-              Status is updated by municipal staff.
-            </Text>
-          </View>
+          {report.garbage_detected ? (
+            <>
+              <StatusTimeline status={report.status} />
+              <View style={styles.officerNote}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={15}
+                  color={colors.textMuted}
+                />
+                <Text style={styles.officerNoteText}>
+                  Status is updated by municipal staff.
+                </Text>
+              </View>
+            </>
+          ) : (
+            <View style={styles.officerNoteBare}>
+              <Ionicons
+                name="information-circle-outline"
+                size={18}
+                color={colors.textMuted}
+              />
+              <Text style={styles.officerNoteText}>
+                No garbage was detected, so this isn't tracked as an actionable
+                complaint — there's nothing for staff to resolve.
+              </Text>
+            </View>
+          )}
         </View>
 
         <Text style={styles.sectionLabel}>LOCATION</Text>
@@ -342,6 +368,10 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+  },
+  officerNoteBare: {
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
   officerNoteText: {
     flex: 1,

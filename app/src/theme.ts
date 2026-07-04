@@ -58,8 +58,15 @@ export const shadow = {
 
 export type StatusKey = ReportStatus;
 
-export function statusStyle(status: ReportStatus) {
+export function statusStyle(status: ReportStatus | "NO_GARBAGE") {
   switch (status) {
+    case "NO_GARBAGE":
+      return {
+        fg: colors.textMuted,
+        bg: colors.border,
+        label: "No garbage",
+        icon: "close-circle-outline" as const,
+      };
     case "RESOLVED":
       return {
         fg: colors.resolved,
