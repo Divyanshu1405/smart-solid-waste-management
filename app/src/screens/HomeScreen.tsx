@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -14,6 +15,9 @@ import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { getReports } from "../services/reportService";
+import { useAuth } from "../context/AuthContext";
+import FadeInView from "../components/FadeInView";
+import ScalePressable from "../components/ScalePressable";
 import { colors, radius, shadow, spacing } from "../theme";
 import type { RootStackParamList } from "../navigation/types";
 import type { ReportStatus } from "../types/status";
@@ -21,6 +25,7 @@ import type { ReportStatus } from "../types/status";
 type HomeScreenProps = NativeStackScreenProps<RootStackParamList, "Home">;
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
+  const { email, signOut } = useAuth();
   const [stats, setStats] = useState({ total: 0, pending: 0, resolved: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +36,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setError(null);
 
     try {
-      const data = await getReports();
+      if (!email) {
+        throw new Error("Not signed in");
+      }
+
+      const data = await getReports(email);
 
       if (!mountedRef.current) {
         return;
@@ -71,16 +80,36 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   return (
     <View style={styles.root}>
       <View style={styles.hero}>
+        <View style={styles.heroCircleLg} />
+        <View style={styles.heroCircleSm} />
         <SafeAreaView edges={["top"]}>
           <View style={styles.heroInner}>
             <View style={styles.brandRow}>
               <View style={styles.logoCircle}>
-                <Ionicons name="leaf" size={22} color={colors.white} />
+                <Image
+                  source={require("../../assets/adaptive-icon.png")}
+                  style={styles.logoImage}
+                />
               </View>
-              <View style={{ marginLeft: spacing.md }}>
+              <View style={{ marginLeft: spacing.md, flex: 1 }}>
                 <Text style={styles.heroTitle}>WasteWatch</Text>
-                <Text style={styles.heroSubtitle}>Garbage reporting</Text>
+                <Text style={styles.heroSubtitle} numberOfLines={1}>
+                  {email ?? "Garbage reporting"}
+                </Text>
               </View>
+              <TouchableOpacity
+                onPress={() => void signOut()}
+                style={styles.logoutButton}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Sign out"
+              >
+                <Ionicons
+                  name="log-out-outline"
+                  size={20}
+                  color={colors.white}
+                />
+              </TouchableOpacity>
             </View>
 
             <Text style={styles.heroLead}>
@@ -130,23 +159,27 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       <ScrollView contentContainerStyle={styles.body}>
         <Text style={styles.sectionLabel}>QUICK ACTIONS</Text>
 
-        <ActionCard
-          icon="camera"
-          tint={colors.primary}
-          tintSoft={colors.primarySoft}
-          title="Submit Report"
-          desc="Capture or upload a photo for analysis."
-          onPress={() => navigation.navigate("Report")}
-        />
+        <FadeInView delay={60}>
+          <ActionCard
+            icon="camera"
+            tint={colors.primary}
+            tintSoft={colors.primarySoft}
+            title="Submit Report"
+            desc="Capture or upload a photo for analysis."
+            onPress={() => navigation.navigate("Report")}
+          />
+        </FadeInView>
 
-        <ActionCard
-          icon="list"
-          tint={colors.inProgress}
-          tintSoft={colors.inProgressSoft}
-          title="Reports"
-          desc="Browse submitted reports and their results."
-          onPress={() => navigation.navigate("Reports")}
-        />
+        <FadeInView delay={140}>
+          <ActionCard
+            icon="list"
+            tint={colors.inProgress}
+            tintSoft={colors.inProgressSoft}
+            title="My Reports"
+            desc="Browse your reports and their status."
+            onPress={() => navigation.navigate("Reports")}
+          />
+        </FadeInView>
 
         <View style={styles.tipCard}>
           <Text style={styles.tipTitle}>How it works</Text>
@@ -201,11 +234,9 @@ function ActionCard({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity
-      activeOpacity={0.9}
+    <ScalePressable
       style={styles.actionCard}
       onPress={onPress}
-      accessibilityRole="button"
       accessibilityLabel={`${title}. ${desc}`}
     >
       <View style={[styles.actionIcon, { backgroundColor: tintSoft }]}>
@@ -216,7 +247,7 @@ function ActionCard({
         <Text style={styles.actionDesc}>{desc}</Text>
       </View>
       <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
-    </TouchableOpacity>
+    </ScalePressable>
   );
 }
 
@@ -242,9 +273,31 @@ const styles = StyleSheet.create({
   },
   hero: {
     backgroundColor: colors.primary,
-    borderBottomLeftRadius: radius.lg,
-    borderBottomRightRadius: radius.lg,
+    borderBottomLeftRadius: radius.lg + 8,
+    borderBottomRightRadius: radius.lg + 8,
     overflow: "hidden",
+  },
+  heroCircleLg: {
+    position: "absolute",
+    top: -90,
+    right: -70,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  heroCircleSm: {
+    position: "absolute",
+    bottom: -60,
+    left: -40,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  logoImage: {
+    width: 48,
+    height: 48,
   },
   heroInner: {
     paddingHorizontal: spacing.xl,
@@ -262,6 +315,15 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
+  },
+  logoutButton: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.pill,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: spacing.sm,
   },
   heroTitle: {
     fontSize: 28,

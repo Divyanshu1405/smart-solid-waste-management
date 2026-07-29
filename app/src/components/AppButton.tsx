@@ -1,13 +1,8 @@
-import {
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  ActivityIndicator,
-  View,
-} from "react-native";
+import { Text, StyleSheet, ActivityIndicator, View } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
 
+import ScalePressable from "./ScalePressable";
 import { colors, radius, spacing } from "../theme";
 
 type Variant = "primary" | "secondary" | "danger";
@@ -43,11 +38,9 @@ export default function AppButton({
   const fg = isPrimary || isDanger ? colors.white : colors.primaryDark;
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.85}
+    <ScalePressable
       onPress={onPress}
       disabled={disabled || loading}
-      accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
       style={[
@@ -68,7 +61,7 @@ export default function AppButton({
           <Text style={[styles.label, { color: fg }]}>{title}</Text>
         </View>
       )}
-    </TouchableOpacity>
+    </ScalePressable>
   );
 }
 

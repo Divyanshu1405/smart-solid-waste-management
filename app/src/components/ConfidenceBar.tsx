@@ -1,4 +1,6 @@
-import { View, Text, StyleSheet } from "react-native";
+import { useEffect, useRef } from "react";
+
+import { View, Text, StyleSheet, Animated } from "react-native";
 
 import { colors, confidenceStyle, radius, spacing } from "../theme";
 
@@ -12,6 +14,21 @@ interface Props {
 export default function ConfidenceBar({ value, showLabel = true }: Props) {
   const c = confidenceStyle(value);
   const width = Math.max(4, Math.min(100, c.pct));
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(progress, {
+      toValue: width,
+      duration: 700,
+      // width animation can't use the native driver
+      useNativeDriver: false,
+    }).start();
+  }, [progress, width]);
+
+  const animatedWidth = progress.interpolate({
+    inputRange: [0, 100],
+    outputRange: ["0%", "100%"],
+  });
 
   return (
     <View
@@ -29,8 +46,11 @@ export default function ConfidenceBar({ value, showLabel = true }: Props) {
         </View>
       )}
       <View style={styles.track}>
-        <View
-          style={[styles.fill, { width: `${width}%`, backgroundColor: c.fg }]}
+        <Animated.View
+          style={[
+            styles.fill,
+            { width: animatedWidth, backgroundColor: c.fg },
+          ]}
         />
       </View>
     </View>
