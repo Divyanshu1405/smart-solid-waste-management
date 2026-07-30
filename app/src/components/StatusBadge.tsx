@@ -2,7 +2,7 @@ import { View, Text, StyleSheet } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
 
-import { radius, spacing, statusStyle } from "../theme";
+import { radius, spacing, statusStyle, typography } from "../theme";
 import type { ReportStatus } from "../types/status";
 
 export default function StatusBadge({
@@ -29,8 +29,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-start",
+    minWidth: 0,
     paddingHorizontal: spacing.md + 2,
-    paddingVertical: spacing.xs + 1,
+    paddingVertical: spacing.xs,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: "transparent",
@@ -39,9 +40,8 @@ const styles = StyleSheet.create({
     marginRight: spacing.xs + 1,
   },
   text: {
-    fontSize: 11.5,
+    ...typography.label,
     fontWeight: "800",
-    letterSpacing: 0.4,
     textTransform: "uppercase",
   },
 });

@@ -18,7 +18,7 @@ import { getReports } from "../services/reportService";
 import { useAuth } from "../context/AuthContext";
 import FadeInView from "../components/FadeInView";
 import ScalePressable from "../components/ScalePressable";
-import { colors, radius, shadow, spacing } from "../theme";
+import { colors, radius, shadow, spacing, typography } from "../theme";
 import type { RootStackParamList } from "../navigation/types";
 import type { ReportStatus } from "../types/status";
 
@@ -113,8 +113,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             </View>
 
             <Text style={styles.heroLead}>
-              Capture a dumping spot, submit it in seconds, and track cleanup
-              status.
+              Report waste and follow its progress.
             </Text>
 
             <View style={styles.statStrip}>
@@ -165,7 +164,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             tint={colors.primary}
             tintSoft={colors.primarySoft}
             title="Submit Report"
-            desc="Capture or upload a photo for analysis."
+            desc="Add a photo and submit a report."
             onPress={() => navigation.navigate("Report")}
           />
         </FadeInView>
@@ -176,26 +175,17 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             tint={colors.inProgress}
             tintSoft={colors.inProgressSoft}
             title="My Reports"
-            desc="Browse your reports and their status."
+            desc="See progress on submitted reports."
             onPress={() => navigation.navigate("Reports")}
           />
         </FadeInView>
 
         <View style={styles.tipCard}>
           <Text style={styles.tipTitle}>How it works</Text>
-          <TipStep
-            icon="camera-outline"
-            text="Take a clear photo of the area"
-          />
-          <TipStep
-            icon="location-outline"
-            text="We attach your location automatically"
-          />
-          <TipStep icon="scan-outline" text="AI checks for garbage" />
-          <TipStep
-            icon="checkmark-done-outline"
-            text="Track the report until it is closed"
-          />
+          <TipStep icon="camera-outline" text="Take a clear photo" />
+          <TipStep icon="location-outline" text="We add your location" />
+          <TipStep icon="scan-outline" text="AI checks the image" />
+          <TipStep icon="checkmark-done-outline" text="Track report progress" />
         </View>
       </ScrollView>
     </View>
@@ -317,8 +307,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   logoutButton: {
-    width: 38,
-    height: 38,
+    width: 48,
+    height: 48,
     borderRadius: radius.pill,
     backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
@@ -332,14 +322,13 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
   },
   heroSubtitle: {
-    fontSize: 12.5,
+    ...typography.supporting,
     color: colors.primarySoft,
     marginTop: 2,
   },
   heroLead: {
+    ...typography.body,
     color: colors.white,
-    fontSize: 15,
-    lineHeight: 21,
     marginTop: spacing.lg,
     maxWidth: 310,
     opacity: 0.94,
@@ -364,10 +353,9 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   heroStatLabel: {
-    fontSize: 10.5,
+    ...typography.label,
     color: colors.primarySoft,
     marginTop: 2,
-    letterSpacing: 0.3,
     textTransform: "uppercase",
   },
   statDivider: {
@@ -383,7 +371,7 @@ const styles = StyleSheet.create({
   heroLoadingText: {
     color: colors.white,
     marginLeft: spacing.sm,
-    fontSize: 12,
+    ...typography.supporting,
   },
   heroError: {
     marginTop: spacing.md,
@@ -393,7 +381,7 @@ const styles = StyleSheet.create({
   },
   heroErrorText: {
     color: colors.white,
-    fontSize: 13,
+    ...typography.supporting,
     fontWeight: "600",
   },
   heroRetry: {
@@ -406,18 +394,20 @@ const styles = StyleSheet.create({
   },
   heroRetryText: {
     color: colors.primaryDark,
-    fontSize: 12,
+    ...typography.label,
     fontWeight: "700",
   },
   body: {
     padding: spacing.lg,
     paddingTop: spacing.xl,
+    paddingBottom: spacing.xxl,
+    width: "100%",
+    maxWidth: 640,
+    alignSelf: "center",
   },
   sectionLabel: {
-    fontSize: 11.5,
-    fontWeight: "800",
+    ...typography.label,
     color: colors.textMuted,
-    letterSpacing: 0.6,
     marginBottom: spacing.md,
     textTransform: "uppercase",
   },
@@ -444,15 +434,14 @@ const styles = StyleSheet.create({
     marginLeft: spacing.lg,
   },
   actionTitle: {
-    fontSize: 16.5,
+    ...typography.body,
     fontWeight: "700",
     color: colors.text,
   },
   actionDesc: {
-    fontSize: 13.5,
+    ...typography.supporting,
     color: colors.textMuted,
     marginTop: 4,
-    lineHeight: 18,
   },
   tipCard: {
     backgroundColor: colors.primarySoft,
@@ -463,7 +452,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(15,138,76,0.12)",
   },
   tipTitle: {
-    fontSize: 14.5,
+    ...typography.sectionTitle,
     fontWeight: "800",
     color: colors.primaryDark,
     marginBottom: spacing.md,
@@ -474,9 +463,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   tipStepText: {
-    fontSize: 13.5,
+    ...typography.supporting,
     color: colors.primaryDark,
     marginLeft: spacing.sm,
-    lineHeight: 18,
   },
 });

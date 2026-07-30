@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import {
   View,
@@ -19,7 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AppButton from "../components/AppButton";
 import FadeInView from "../components/FadeInView";
 import { useAuth, authErrorMessage } from "../context/AuthContext";
-import { colors, radius, shadow, spacing } from "../theme";
+import { colors, radius, shadow, spacing, typography } from "../theme";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -27,12 +27,15 @@ type Mode = "signin" | "signup";
 
 export default function LoginScreen() {
   const { signIn, signUp, resetPassword } = useAuth();
+  const scrollRef = useRef<ScrollView>(null);
+  const passwordInputRef = useRef<TextInput>(null);
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const isSignup = mode === "signup";
 
@@ -75,6 +78,7 @@ export default function LoginScreen() {
     }
 
     setError(null);
+    setResetting(true);
 
     try {
       await resetPassword(trimmed);
@@ -84,6 +88,8 @@ export default function LoginScreen() {
       );
     } catch (err) {
       setError(authErrorMessage(err));
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -96,11 +102,13 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           <FadeInView style={styles.logoWrap}>
             <Image
@@ -133,6 +141,7 @@ export default function LoginScreen() {
                 : "Sign in with your verified WasteWatch account."}
             </Text>
 
+            <Text style={styles.inputLabel}>Email</Text>
             <View style={styles.inputWrap}>
               <Ionicons
                 name="mail-outline"
@@ -155,10 +164,16 @@ export default function LoginScreen() {
                 keyboardType="email-address"
                 autoComplete="email"
                 returnKeyType="next"
+                blurOnSubmit={false}
+                onFocus={() =>
+                  scrollRef.current?.scrollTo({ y: 120, animated: true })
+                }
+                onSubmitEditing={() => passwordInputRef.current?.focus()}
                 accessibilityLabel="Email address"
               />
             </View>
 
+            <Text style={styles.inputLabel}>Password</Text>
             <View style={styles.inputWrap}>
               <Ionicons
                 name="lock-closed-outline"
@@ -172,6 +187,7 @@ export default function LoginScreen() {
                 }
                 placeholderTextColor={colors.textMuted}
                 value={password}
+                ref={passwordInputRef}
                 onChangeText={(text) => {
                   setPassword(text);
                   if (error) {
@@ -182,7 +198,10 @@ export default function LoginScreen() {
                 autoCapitalize="none"
                 autoComplete={isSignup ? "new-password" : "current-password"}
                 returnKeyType="go"
-                onSubmitEditing={submit}
+                onFocus={() =>
+                  scrollRef.current?.scrollTo({ y: 180, animated: true })
+                }
+                onSubmitEditing={() => void submit()}
                 accessibilityLabel="Password"
               />
               <TouchableOpacity
@@ -223,12 +242,15 @@ export default function LoginScreen() {
 
             {!isSignup && (
               <TouchableOpacity
-                onPress={forgotPassword}
+                onPress={() => void forgotPassword()}
                 style={styles.forgotWrap}
+                disabled={resetting}
                 accessibilityRole="button"
                 accessibilityLabel="Forgot password"
               >
-                <Text style={styles.forgotText}>Forgot password?</Text>
+                <Text style={styles.forgotText}>
+                  {resetting ? "Sending reset link..." : "Forgot password?"}
+                </Text>
               </TouchableOpacity>
             )}
           </FadeInView>
@@ -275,6 +297,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     padding: spacing.xl,
+    paddingBottom: spacing.xxl,
+    width: "100%",
+    maxWidth: 480,
+    alignSelf: "center",
   },
   logoWrap: {
     alignItems: "center",
@@ -293,7 +319,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
   },
   subtitle: {
-    fontSize: 14,
+    ...typography.supporting,
     color: colors.textMuted,
     marginTop: spacing.xs,
     textAlign: "center",
@@ -322,7 +348,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   modeTabText: {
-    fontSize: 13.5,
+    ...typography.label,
     fontWeight: "700",
     color: colors.primaryDark,
   },
@@ -330,10 +356,9 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   hint: {
-    fontSize: 13,
+    ...typography.supporting,
     color: colors.textMuted,
     marginTop: spacing.md,
-    lineHeight: 18,
   },
   inputWrap: {
     flexDirection: "row",
@@ -342,8 +367,14 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
     backgroundColor: colors.background,
+  },
+  inputLabel: {
+    ...typography.label,
+    fontWeight: "700",
+    color: colors.text,
+    marginTop: spacing.md,
   },
   input: {
     flex: 1,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { View, Text, StyleSheet, Alert, ScrollView } from "react-native";
 
@@ -8,12 +8,25 @@ import { Ionicons } from "@expo/vector-icons";
 import AppButton from "../components/AppButton";
 import FadeInView from "../components/FadeInView";
 import { useAuth, authErrorMessage } from "../context/AuthContext";
-import { colors, radius, shadow, spacing } from "../theme";
+import { colors, radius, shadow, spacing, typography } from "../theme";
 
 export default function VerifyEmailScreen() {
   const { email, refreshVerification, resendVerification, signOut } = useAuth();
   const [checking, setChecking] = useState(false);
   const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown === 0) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setResendCooldown((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const checkNow = async () => {
     setChecking(true);
@@ -36,10 +49,15 @@ export default function VerifyEmailScreen() {
   };
 
   const resend = async () => {
+    if (resendCooldown > 0) {
+      return;
+    }
+
     setResending(true);
 
     try {
       await resendVerification();
+      setResendCooldown(30);
       Alert.alert(
         "Email sent",
         `A fresh verification link is on its way to ${email}.`,
@@ -56,7 +74,11 @@ export default function VerifyEmailScreen() {
       <ScrollView contentContainerStyle={styles.body}>
         <FadeInView style={styles.card}>
           <View style={styles.iconCircle}>
-            <Ionicons name="mail-unread-outline" size={40} color={colors.primary} />
+            <Ionicons
+              name="mail-unread-outline"
+              size={40}
+              color={colors.primary}
+            />
           </View>
 
           <Text style={styles.title}>Verify your email</Text>
@@ -67,8 +89,8 @@ export default function VerifyEmailScreen() {
           </Text>
 
           <Text style={styles.textMuted}>
-            Open the email and click the link, then come back here and tap
-            Continue. Don't forget to check your spam folder.
+            Tap the link in the email, then come back here and continue. Check
+            your spam folder too.
           </Text>
 
           <View style={styles.buttonWrap}>
@@ -82,10 +104,17 @@ export default function VerifyEmailScreen() {
 
           <View style={styles.buttonWrapSm}>
             <AppButton
-              title={resending ? "Sending..." : "Resend email"}
+              title={
+                resending
+                  ? "Sending..."
+                  : resendCooldown > 0
+                    ? `Resend in ${resendCooldown}s`
+                    : "Resend email"
+              }
               variant="secondary"
               loading={resending}
-              onPress={resend}
+              disabled={resendCooldown > 0}
+              onPress={() => void resend()}
             />
           </View>
 
@@ -111,6 +140,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     padding: spacing.xl,
+    paddingBottom: spacing.xxl,
+    width: "100%",
+    maxWidth: 480,
+    alignSelf: "center",
   },
   card: {
     backgroundColor: colors.card,
@@ -131,28 +164,26 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   title: {
-    fontSize: 22,
+    ...typography.screenTitle,
     fontWeight: "800",
     color: colors.text,
     letterSpacing: -0.3,
   },
   text: {
-    fontSize: 14.5,
+    ...typography.body,
     color: colors.text,
     textAlign: "center",
     marginTop: spacing.md,
-    lineHeight: 21,
   },
   email: {
     fontWeight: "800",
     color: colors.primaryDark,
   },
   textMuted: {
-    fontSize: 13,
+    ...typography.supporting,
     color: colors.textMuted,
     textAlign: "center",
     marginTop: spacing.md,
-    lineHeight: 19,
   },
   buttonWrap: {
     alignSelf: "stretch",

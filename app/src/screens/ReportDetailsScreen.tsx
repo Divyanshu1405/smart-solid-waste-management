@@ -18,7 +18,7 @@ import StatusBadge from "../components/StatusBadge";
 import StatusTimeline from "../components/StatusTimeline";
 import DetectionConfidence from "../components/DetectionConfidence";
 import FadeInView from "../components/FadeInView";
-import { colors, radius, shadow, spacing } from "../theme";
+import { colors, radius, shadow, spacing, typography } from "../theme";
 import type { RootStackParamList } from "../navigation/types";
 import { formatReportDate } from "../utils/date";
 
@@ -47,7 +47,7 @@ export default function ReportDetailsScreen({
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.headerRow}>
           <Text style={styles.title}>Report #{report.display_id}</Text>
@@ -131,7 +131,7 @@ export default function ReportDetailsScreen({
                   color={colors.textMuted}
                 />
                 <Text style={styles.officerNoteText}>
-                  Status is updated by municipal staff.
+                  Updates will appear here as your report is reviewed.
                 </Text>
               </View>
             </>
@@ -217,6 +217,10 @@ const styles = StyleSheet.create({
   body: {
     padding: spacing.lg,
     paddingTop: spacing.xs,
+    paddingBottom: spacing.xxl,
+    width: "100%",
+    maxWidth: 640,
+    alignSelf: "center",
   },
   safeArea: {
     flex: 1,
@@ -224,13 +228,12 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
     marginBottom: spacing.lg,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "800",
+    ...typography.screenTitle,
     color: colors.text,
     letterSpacing: -0.3,
   },
@@ -265,10 +268,9 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   explainer: {
-    fontSize: 13,
+    ...typography.supporting,
     color: colors.textMuted,
     marginTop: spacing.md,
-    lineHeight: 19,
   },
   statRow: {
     flexDirection: "row",
@@ -285,20 +287,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
   },
   statValue: {
-    fontSize: 22,
+    ...typography.sectionTitle,
     fontWeight: "800",
     color: colors.primaryDark,
   },
   statLabel: {
-    fontSize: 12,
+    ...typography.label,
     color: colors.textMuted,
     marginTop: 2,
   },
   itemsLabel: {
-    fontSize: 12,
-    fontWeight: "800",
+    ...typography.label,
     color: colors.textMuted,
-    letterSpacing: 0.5,
     textTransform: "uppercase",
     marginTop: spacing.md,
   },
@@ -309,22 +309,20 @@ const styles = StyleSheet.create({
   },
   itemLabel: {
     flex: 1,
-    fontSize: 13.5,
+    ...typography.supporting,
     fontWeight: "600",
     color: colors.text,
     marginLeft: spacing.sm,
     textTransform: "capitalize",
   },
   itemConfidence: {
-    fontSize: 13,
+    ...typography.supporting,
     fontWeight: "700",
     color: colors.primaryDark,
   },
   sectionLabel: {
-    fontSize: 11.5,
-    fontWeight: "800",
+    ...typography.label,
     color: colors.textMuted,
-    letterSpacing: 0.6,
     marginTop: spacing.xl,
     marginBottom: spacing.md,
     textTransform: "uppercase",
@@ -351,10 +349,9 @@ const styles = StyleSheet.create({
   },
   officerNoteText: {
     flex: 1,
-    fontSize: 12,
+    ...typography.supporting,
     color: colors.textMuted,
     marginLeft: spacing.sm,
-    lineHeight: 17,
   },
   infoCard: {
     backgroundColor: colors.card,

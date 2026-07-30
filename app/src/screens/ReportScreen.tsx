@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { isAxiosError } from "axios";
 
@@ -16,7 +17,8 @@ import { useAuth } from "../context/AuthContext";
 
 import AppButton from "../components/AppButton";
 import FadeInView from "../components/FadeInView";
-import { colors, radius, shadow, spacing } from "../theme";
+import { colors, radius, shadow, spacing, typography } from "../theme";
+import type { RootStackParamList } from "../navigation/types";
 
 const LOCATION_TIMEOUT_MS = 20_000;
 
@@ -41,7 +43,9 @@ function getCurrentLocationWithTimeout(): Promise<Location.LocationObject> {
   });
 }
 
-export default function ReportScreen() {
+type ReportScreenProps = NativeStackScreenProps<RootStackParamList, "Report">;
+
+export default function ReportScreen({ navigation }: ReportScreenProps) {
   const { email } = useAuth();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -55,14 +59,18 @@ export default function ReportScreen() {
   }, []);
 
   const pickImage = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-    });
+    try {
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+      });
 
-    if (!res.canceled) {
-      setImageUri(res.assets[0].uri);
-      setResult(null);
+      if (!res.canceled) {
+        setImageUri(res.assets[0].uri);
+        setResult(null);
+      }
+    } catch {
+      Alert.alert("Couldn't open gallery", "Please try choosing a photo again.");
     }
   };
 
@@ -74,14 +82,18 @@ export default function ReportScreen() {
       return;
     }
 
-    const res = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-    });
+    try {
+      const res = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+      });
 
-    if (!res.canceled) {
-      setImageUri(res.assets[0].uri);
-      setResult(null);
+      if (!res.canceled) {
+        setImageUri(res.assets[0].uri);
+        setResult(null);
+      }
+    } catch {
+      Alert.alert("Couldn't open camera", "Please try taking the photo again.");
     }
   };
 
@@ -155,20 +167,19 @@ export default function ReportScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.pageHeader}>
           <Text style={styles.kicker}>Submit report</Text>
-          <Text style={styles.pageTitle}>Capture and analyze</Text>
+          <Text style={styles.pageTitle}>Report waste</Text>
           <Text style={styles.pageSubtitle}>
-            Use a clear photo so the app can check it quickly.
+            Add a clear photo of the waste.
           </Text>
         </View>
 
         <View style={styles.previewCard}>
           <View style={styles.previewHeader}>
             <Text style={styles.previewLabel}>Photo</Text>
-            <Text style={styles.previewHint}>Step 1 of 3</Text>
           </View>
           {imageUri ? (
             <Image source={{ uri: imageUri }} style={styles.preview} />
@@ -187,7 +198,7 @@ export default function ReportScreen() {
           )}
         </View>
 
-        <Text style={styles.sectionLabel}>Choose source</Text>
+        <Text style={styles.sectionLabel}>Add a photo</Text>
         <View style={styles.actions}>
           <View style={styles.actionHalf}>
             <AppButton title="Camera" icon="camera" onPress={takePhoto} />
@@ -205,7 +216,7 @@ export default function ReportScreen() {
 
         <View style={styles.submitWrap}>
           <AppButton
-            title={loading ? "Submitting report..." : "Analyze report"}
+            title={loading ? "Submitting report..." : "Submit report"}
             icon={loading ? undefined : "scan"}
             loading={loading}
             disabled={!imageUri}
@@ -236,10 +247,9 @@ export default function ReportScreen() {
                       color={detected ? colors.resolved : colors.pending}
                     />
                     <Text style={styles.resultBadgeText}>
-                      {detected ? "Garbage found" : "No garbage found"}
+                      {detected ? "Report submitted" : "No waste detected"}
                     </Text>
                   </View>
-                  <Text style={styles.resultMeta}>Step 3 of 3</Text>
                 </View>
 
                 <View style={styles.resultTitleRow}>
@@ -249,7 +259,7 @@ export default function ReportScreen() {
                     color={detected ? colors.resolved : colors.pending}
                   />
                   <Text style={styles.resultTitle}>
-                    {detected ? "Garbage found" : "No garbage found"}
+                    {detected ? "Report submitted" : "No waste detected"}
                   </Text>
                 </View>
 
@@ -264,17 +274,25 @@ export default function ReportScreen() {
                     <Text style={styles.metricValue}>
                       {detected ? "Yes" : "No"}
                     </Text>
-                    <Text style={styles.metricLabel}>Complaint filed</Text>
+                    <Text style={styles.metricLabel}>Report filed</Text>
                   </View>
                 </View>
 
                 <Text style={styles.savedNote}>
                   {detected
-                    ? "Your complaint has been filed and is visible to the municipal dashboard. Open Reports to track it."
-                    : "No garbage was detected, so no complaint was filed and the photo was not stored."}
+                    ? "You can track progress in My Reports."
+                    : "Try another clear photo if you think waste was missed."}
                 </Text>
 
                 <View style={{ marginTop: spacing.md }}>
+                  {detected && (
+                    <AppButton
+                      title="View My Reports"
+                      variant="secondary"
+                      onPress={() => navigation.navigate("Reports")}
+                    />
+                  )}
+                  {detected && <View style={{ height: spacing.sm }} />}
                   <AppButton
                     title="Report Another"
                     variant="secondary"
@@ -293,6 +311,10 @@ const styles = StyleSheet.create({
   body: {
     padding: spacing.lg,
     paddingTop: spacing.xs,
+    paddingBottom: spacing.xxl,
+    width: "100%",
+    maxWidth: 640,
+    alignSelf: "center",
   },
   safeArea: {
     flex: 1,
@@ -309,17 +331,15 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   pageTitle: {
-    fontSize: 24,
-    fontWeight: "800",
+    ...typography.screenTitle,
     color: colors.text,
     letterSpacing: -0.3,
     marginTop: 2,
   },
   pageSubtitle: {
-    fontSize: 13.5,
+    ...typography.supporting,
     color: colors.textMuted,
     marginTop: spacing.xs,
-    lineHeight: 18,
     maxWidth: 320,
   },
   previewCard: {
@@ -333,20 +353,14 @@ const styles = StyleSheet.create({
   previewHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
     paddingBottom: spacing.sm,
   },
   previewLabel: {
-    fontSize: 15,
+    ...typography.body,
     fontWeight: "800",
     color: colors.text,
-  },
-  previewHint: {
-    fontSize: 11.5,
-    fontWeight: "700",
-    color: colors.textMuted,
   },
   preview: {
     width: "100%",
@@ -384,10 +398,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   sectionLabel: {
-    fontSize: 11.5,
-    fontWeight: "800",
+    ...typography.label,
     color: colors.textMuted,
-    letterSpacing: 0.7,
     textTransform: "uppercase",
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
@@ -420,13 +432,6 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xs,
     textTransform: "uppercase",
     letterSpacing: 0.3,
-  },
-  resultMeta: {
-    fontSize: 11.5,
-    fontWeight: "800",
-    color: colors.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
   },
   resultTitleRow: {
     flexDirection: "row",

@@ -24,7 +24,7 @@ import StatusBadge from "../components/StatusBadge";
 import DetectionConfidence from "../components/DetectionConfidence";
 import FadeInView from "../components/FadeInView";
 import ScalePressable from "../components/ScalePressable";
-import { colors, radius, shadow, spacing } from "../theme";
+import { colors, radius, shadow, spacing, typography } from "../theme";
 import type { RootStackParamList } from "../navigation/types";
 import type { ReportStatus } from "../types/status";
 import { formatReportDate } from "../utils/date";
@@ -123,7 +123,7 @@ export default function ReportsScreen({ navigation }: ReportsScreenProps) {
           size={56}
           color={colors.textMuted}
         />
-        <Text style={styles.emptyTitle}>Could not load reports</Text>
+        <Text style={styles.emptyTitle}>Couldn't load reports</Text>
         <Text style={styles.emptyText}>{error}</Text>
         <View style={styles.retryWrap}>
           <TouchableOpacity
@@ -190,7 +190,7 @@ export default function ReportsScreen({ navigation }: ReportsScreenProps) {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
@@ -232,66 +232,73 @@ export default function ReportsScreen({ navigation }: ReportsScreenProps) {
               style={styles.card}
               accessibilityLabel={`Open report ${item.display_id}`}
             >
-            <View style={styles.cardTop}>
-              <View>
-                <Image
-                  source={{ uri: item.original_image_url }}
-                  style={styles.thumb}
-                />
-                {item.garbage_count > 0 && (
-                  <View style={styles.thumbChip}>
-                    <Ionicons name="trash" size={9} color={colors.white} />
-                    <Text style={styles.thumbChipText}>
-                      {item.garbage_count}
+              <View style={styles.cardTop}>
+                <View>
+                  <Image
+                    source={{ uri: item.original_image_url }}
+                    style={styles.thumb}
+                  />
+                  {item.garbage_count > 0 && (
+                    <View style={styles.thumbChip}>
+                      <Ionicons name="trash" size={9} color={colors.white} />
+                      <Text style={styles.thumbChipText}>
+                        {item.garbage_count}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.cardBody}>
+                  <View style={styles.cardTopRow}>
+                    <Text style={styles.reportId} numberOfLines={1}>
+                      Report #{item.display_id}
                     </Text>
                   </View>
-                )}
+
+                  <View style={styles.statusWrap}>
+                    <StatusBadge
+                      status={
+                        item.garbage_detected ? item.status : "NO_GARBAGE"
+                      }
+                    />
+                  </View>
+
+                  <View style={styles.metaRow}>
+                    <Ionicons
+                      name="trash-outline"
+                      size={14}
+                      color={colors.textMuted}
+                    />
+                    <Text style={styles.metaText}>
+                      {item.garbage_count} items found
+                    </Text>
+                  </View>
+
+                  <View style={styles.metaRow}>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={14}
+                      color={colors.textMuted}
+                    />
+                    <Text style={styles.metaText}>
+                      {formatReportDate(item.created_at)}
+                    </Text>
+                  </View>
+                </View>
+
+                <Ionicons
+                  name="chevron-forward"
+                  size={22}
+                  color={colors.textMuted}
+                />
               </View>
 
-              <View style={styles.cardBody}>
-                <View style={styles.cardTopRow}>
-                  <Text style={styles.reportId}>Report #{item.display_id}</Text>
-                  <StatusBadge
-                    status={item.garbage_detected ? item.status : "NO_GARBAGE"}
-                  />
-                </View>
-
-                <View style={styles.metaRow}>
-                  <Ionicons
-                    name="trash-outline"
-                    size={14}
-                    color={colors.textMuted}
-                  />
-                  <Text style={styles.metaText}>
-                    {item.garbage_count} items found
-                  </Text>
-                </View>
-
-                <View style={styles.metaRow}>
-                  <Ionicons
-                    name="calendar-outline"
-                    size={14}
-                    color={colors.textMuted}
-                  />
-                  <Text style={styles.metaText}>
-                    {formatReportDate(item.created_at)}
-                  </Text>
-                </View>
+              <View style={styles.cardConfidence}>
+                <DetectionConfidence
+                  detected={item.garbage_detected}
+                  value={item.highest_confidence}
+                />
               </View>
-
-              <Ionicons
-                name="chevron-forward"
-                size={22}
-                color={colors.textMuted}
-              />
-            </View>
-
-            <View style={styles.cardConfidence}>
-              <DetectionConfidence
-                detected={item.garbage_detected}
-                value={item.highest_confidence}
-              />
-            </View>
             </ScalePressable>
           </FadeInView>
         )}
@@ -339,6 +346,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
     flexGrow: 1,
     backgroundColor: colors.background,
+    paddingBottom: spacing.xxl,
   },
   safeArea: {
     flex: 1,
@@ -383,6 +391,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     marginRight: spacing.sm,
+    minHeight: 48,
+    justifyContent: "center",
   },
   chipActive: {
     backgroundColor: colors.primary,
@@ -434,17 +444,21 @@ const styles = StyleSheet.create({
   },
   cardBody: {
     flex: 1,
+    minWidth: 0,
     marginLeft: spacing.md + 2,
   },
   cardTopRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
   },
   reportId: {
-    fontSize: 15.5,
+    ...typography.body,
     fontWeight: "800",
     color: colors.text,
+    flexShrink: 1,
+  },
+  statusWrap: {
+    marginTop: spacing.xs,
   },
   metaRow: {
     flexDirection: "row",

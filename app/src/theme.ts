@@ -46,6 +46,33 @@ export const radius = {
   pill: 999,
 };
 
+export const typography = {
+  screenTitle: {
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: "800",
+  },
+  sectionTitle: {
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: "800",
+  },
+  body: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  supporting: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  label: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+  },
+} as const;
+
 export const shadow = {
   card: {
     shadowColor: "#102016",
