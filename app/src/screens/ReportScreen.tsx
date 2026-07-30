@@ -18,6 +18,29 @@ import AppButton from "../components/AppButton";
 import FadeInView from "../components/FadeInView";
 import { colors, radius, shadow, spacing } from "../theme";
 
+const LOCATION_TIMEOUT_MS = 20_000;
+
+function getCurrentLocationWithTimeout(): Promise<Location.LocationObject> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error("LOCATION_TIMEOUT"));
+    }, LOCATION_TIMEOUT_MS);
+
+    Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    }).then(
+      (location) => {
+        clearTimeout(timeoutId);
+        resolve(location);
+      },
+      (error: unknown) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      },
+    );
+  });
+}
+
 export default function ReportScreen() {
   const { email } = useAuth();
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -83,7 +106,7 @@ export default function ReportScreen() {
     setLoading(true);
 
     try {
-      const location = await Location.getCurrentPositionAsync({});
+      const location = await getCurrentLocationWithTimeout();
 
       const response = await uploadReport(
         imageUri,
@@ -96,6 +119,14 @@ export default function ReportScreen() {
         setResult(response);
       }
     } catch (error) {
+      if (error instanceof Error && error.message === "LOCATION_TIMEOUT") {
+        Alert.alert(
+          "Location unavailable",
+          "We couldn't determine your location. Move to an open area or enable location services, then try again.",
+        );
+        return;
+      }
+
       // Surface the server's own error when there is one — a 500 from the
       // dashboard is very different from having no internet.
       const data = isAxiosError(error)
@@ -174,7 +205,7 @@ export default function ReportScreen() {
 
         <View style={styles.submitWrap}>
           <AppButton
-            title={loading ? "Analyzing (can take a minute)..." : "Analyze report"}
+            title={loading ? "Submitting report..." : "Analyze report"}
             icon={loading ? undefined : "scan"}
             loading={loading}
             disabled={!imageUri}

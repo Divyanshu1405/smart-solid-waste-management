@@ -20,6 +20,7 @@ import DetectionConfidence from "../components/DetectionConfidence";
 import FadeInView from "../components/FadeInView";
 import { colors, radius, shadow, spacing } from "../theme";
 import type { RootStackParamList } from "../navigation/types";
+import { formatReportDate } from "../utils/date";
 
 type ReportDetailsScreenProps = NativeStackScreenProps<
   RootStackParamList,
@@ -170,7 +171,7 @@ export default function ReportDetailsScreen({
           <InfoRow
             icon="time"
             label="Reported"
-            value={new Date(report.created_at).toLocaleString()}
+            value={formatReportDate(report.created_at)}
           />
         </View>
 

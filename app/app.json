@@ -8,6 +8,12 @@
         {
           "cameraPermission": "Allow the app to access your camera to report garbage."
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow WasteWatch to use your location to place your garbage report accurately."
+        }
       ]
     ],
     "version": "1.0.0",
@@ -29,7 +35,6 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0F8A4C"
       },
-      "usesCleartextTraffic": true,
       "edgeToEdgeEnabled": false,
       "predictiveBackGestureEnabled": false
     },

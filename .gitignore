@@ -143,6 +143,8 @@ ml_models/
 
 # Dataset source material
 dataset/
+dataset_offline_aug/
+dataset_offline_aug_G2/
 
 # Sample internet test images
 test_images_internet/
@@ -152,3 +154,9 @@ ml_training/
 
 #evaluation
 evaluation/
+
+#augmentation
+augmentation/
+
+#preprocessing
+preprocessing/

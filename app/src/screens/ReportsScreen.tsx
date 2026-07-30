@@ -27,6 +27,7 @@ import ScalePressable from "../components/ScalePressable";
 import { colors, radius, shadow, spacing } from "../theme";
 import type { RootStackParamList } from "../navigation/types";
 import type { ReportStatus } from "../types/status";
+import { formatReportDate } from "../utils/date";
 
 const FILTERS: Array<{ key: FilterKey; label: string }> = [
   { key: "ALL", label: "All" },
@@ -273,12 +274,7 @@ export default function ReportsScreen({ navigation }: ReportsScreenProps) {
                     color={colors.textMuted}
                   />
                   <Text style={styles.metaText}>
-                    {new Date(item.created_at).toLocaleDateString()}
-                    {"  "}
-                    {new Date(item.created_at).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {formatReportDate(item.created_at)}
                   </Text>
                 </View>
               </View>
