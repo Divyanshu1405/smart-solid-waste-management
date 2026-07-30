@@ -14,7 +14,6 @@ interface DashboardDetectedItem {
 
 interface DashboardReport {
   id: string;
-  userEmail: string;
   imageUrl: string;
   status: DashboardStatus;
   latitude: number | null;

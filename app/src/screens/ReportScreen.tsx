@@ -457,9 +457,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 2,
   },
-  confidenceWrap: {
-    marginTop: spacing.lg,
-  },
   savedNote: {
     fontSize: 12.5,
     color: colors.textMuted,

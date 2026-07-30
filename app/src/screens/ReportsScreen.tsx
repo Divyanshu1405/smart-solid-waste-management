@@ -457,9 +457,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: spacing.xs + 2,
   },
-  chevron: {
-    marginLeft: spacing.xs,
-  },
   cardConfidence: {
     marginTop: spacing.md,
   },
