@@ -1,17 +1,9 @@
-export interface Detection {
-  confidence: number;
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-}
-
-export interface DetectionResponse {
-  report_id: number;
-  garbage_detected: boolean;
-  garbage_count: number;
-  highest_confidence: number;
-  latitude: number;
-  longitude: number;
-  detections: Detection[];
+// Response of the dashboard's POST /api/v1/upload endpoint.
+// When nothing is detected the image is discarded server-side and no
+// report is created, so status tells the whole story.
+export interface UploadResult {
+  status: "success" | "no_waste_detected";
+  image_url?: string;
+  detected_items_count: number;
+  message?: string;
 }

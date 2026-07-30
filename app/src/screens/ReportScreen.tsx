@@ -8,17 +8,21 @@ import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 
-import { detectGarbage } from "../services/detectionService";
-import { DetectionResponse } from "../types/detection";
+import { isAxiosError } from "axios";
+
+import { submitReport as uploadReport } from "../services/detectionService";
+import { UploadResult } from "../types/detection";
+import { useAuth } from "../context/AuthContext";
 
 import AppButton from "../components/AppButton";
-import DetectionConfidence from "../components/DetectionConfidence";
+import FadeInView from "../components/FadeInView";
 import { colors, radius, shadow, spacing } from "../theme";
 
 export default function ReportScreen() {
+  const { email } = useAuth();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<DetectionResponse | null>(null);
+  const [result, setResult] = useState<UploadResult | null>(null);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -64,6 +68,11 @@ export default function ReportScreen() {
       return;
     }
 
+    if (!email) {
+      Alert.alert("Not signed in", "Sign in with your email first.");
+      return;
+    }
+
     const permission = await Location.requestForegroundPermissionsAsync();
 
     if (permission.status !== "granted") {
@@ -76,17 +85,32 @@ export default function ReportScreen() {
     try {
       const location = await Location.getCurrentPositionAsync({});
 
-      const response = await detectGarbage(
+      const response = await uploadReport(
         imageUri,
         location.coords.latitude,
         location.coords.longitude,
+        email,
       );
 
       if (mountedRef.current) {
         setResult(response);
       }
-    } catch {
-      Alert.alert("Detection failed", "Could not reach the server. Try again.");
+    } catch (error) {
+      // Surface the server's own error when there is one — a 500 from the
+      // dashboard is very different from having no internet.
+      const data = isAxiosError(error)
+        ? (error.response?.data as
+            | { details?: string; error?: string }
+            | undefined)
+        : undefined;
+      const detail = data?.details ?? data?.error;
+
+      Alert.alert(
+        "Submission failed",
+        detail
+          ? `The dashboard server rejected the report:\n\n"${detail}"\n\nThis is a server-side configuration issue, not a problem with your phone.`
+          : "Could not reach the server. Check your internet connection and try again.",
+      );
     } finally {
       if (mountedRef.current) {
         setLoading(false);
@@ -150,7 +174,7 @@ export default function ReportScreen() {
 
         <View style={styles.submitWrap}>
           <AppButton
-            title={loading ? "Analyzing..." : "Analyze report"}
+            title={loading ? "Analyzing (can take a minute)..." : "Analyze report"}
             icon={loading ? undefined : "scan"}
             loading={loading}
             disabled={!imageUri}
@@ -158,81 +182,77 @@ export default function ReportScreen() {
           />
         </View>
 
-        {result && (
-          <View
-            style={[
-              styles.resultCard,
-              {
-                backgroundColor: result.garbage_detected
-                  ? colors.resolvedSoft
-                  : colors.pendingSoft,
-              },
-            ]}
-          >
-            <View style={styles.resultHeader}>
-              <View style={styles.resultBadge}>
-                <Ionicons
-                  name={result.garbage_detected ? "checkmark" : "time"}
-                  size={12}
-                  color={
-                    result.garbage_detected ? colors.resolved : colors.pending
-                  }
-                />
-                <Text style={styles.resultBadgeText}>
-                  {result.garbage_detected
-                    ? "Garbage found"
-                    : "No garbage found"}
+        {result &&
+          (() => {
+            const detected = result.status === "success";
+
+            return (
+              <FadeInView
+                style={[
+                  styles.resultCard,
+                  {
+                    backgroundColor: detected
+                      ? colors.resolvedSoft
+                      : colors.pendingSoft,
+                  },
+                ]}
+              >
+                <View style={styles.resultHeader}>
+                  <View style={styles.resultBadge}>
+                    <Ionicons
+                      name={detected ? "checkmark" : "time"}
+                      size={12}
+                      color={detected ? colors.resolved : colors.pending}
+                    />
+                    <Text style={styles.resultBadgeText}>
+                      {detected ? "Garbage found" : "No garbage found"}
+                    </Text>
+                  </View>
+                  <Text style={styles.resultMeta}>Step 3 of 3</Text>
+                </View>
+
+                <View style={styles.resultTitleRow}>
+                  <Ionicons
+                    name={detected ? "checkmark-circle" : "alert-circle"}
+                    size={24}
+                    color={detected ? colors.resolved : colors.pending}
+                  />
+                  <Text style={styles.resultTitle}>
+                    {detected ? "Garbage found" : "No garbage found"}
+                  </Text>
+                </View>
+
+                <View style={styles.resultRow}>
+                  <View style={styles.metric}>
+                    <Text style={styles.metricValue}>
+                      {result.detected_items_count}
+                    </Text>
+                    <Text style={styles.metricLabel}>Items found</Text>
+                  </View>
+                  <View style={styles.metric}>
+                    <Text style={styles.metricValue}>
+                      {detected ? "Yes" : "No"}
+                    </Text>
+                    <Text style={styles.metricLabel}>Complaint filed</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.savedNote}>
+                  {detected
+                    ? "Your complaint has been filed and is visible to the municipal dashboard. Open Reports to track it."
+                    : "No garbage was detected, so no complaint was filed and the photo was not stored."}
                 </Text>
-              </View>
-              <Text style={styles.resultMeta}>Step 3 of 3</Text>
-            </View>
 
-            <View style={styles.resultTitleRow}>
-              <Ionicons
-                name={
-                  result.garbage_detected ? "checkmark-circle" : "alert-circle"
-                }
-                size={24}
-                color={
-                  result.garbage_detected ? colors.resolved : colors.pending
-                }
-              />
-              <Text style={styles.resultTitle}>
-                {result.garbage_detected ? "Garbage found" : "No garbage found"}
-              </Text>
-            </View>
-
-            <View style={styles.resultRow}>
-              <View style={styles.metric}>
-                <Text style={styles.metricValue}>{result.garbage_count}</Text>
-                <Text style={styles.metricLabel}>Items found</Text>
-              </View>
-              <View style={styles.metric}>
-                <Text style={styles.metricValue}>#{result.report_id}</Text>
-                <Text style={styles.metricLabel}>Report ID</Text>
-              </View>
-            </View>
-
-            <View style={styles.confidenceWrap}>
-              <DetectionConfidence
-                detected={result.garbage_detected}
-                value={result.highest_confidence}
-              />
-            </View>
-
-            <Text style={styles.savedNote}>
-              Saved to reports. Open Reports to view the marked image.
-            </Text>
-
-            <View style={{ marginTop: spacing.md }}>
-              <AppButton
-                title="Report Another"
-                variant="secondary"
-                onPress={reset}
-              />
-            </View>
-          </View>
-        )}
+                <View style={{ marginTop: spacing.md }}>
+                  <AppButton
+                    title="Report Another"
+                    variant="secondary"
+                    onPress={reset}
+                  />
+                </View>
+              </FadeInView>
+            );
+          })()}
       </ScrollView>
     </SafeAreaView>
   );

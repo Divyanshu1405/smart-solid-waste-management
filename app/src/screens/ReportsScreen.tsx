@@ -18,11 +18,12 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { Report } from "../types/report";
 import { getReports } from "../services/reportService";
-import { BASE_URL } from "../config/api";
-import { joinUrl } from "../utils/url";
+import { useAuth } from "../context/AuthContext";
 
 import StatusBadge from "../components/StatusBadge";
 import DetectionConfidence from "../components/DetectionConfidence";
+import FadeInView from "../components/FadeInView";
+import ScalePressable from "../components/ScalePressable";
 import { colors, radius, shadow, spacing } from "../theme";
 import type { RootStackParamList } from "../navigation/types";
 import type { ReportStatus } from "../types/status";
@@ -30,8 +31,8 @@ import type { ReportStatus } from "../types/status";
 const FILTERS: Array<{ key: FilterKey; label: string }> = [
   { key: "ALL", label: "All" },
   { key: "PENDING", label: "Pending" },
-  { key: "IN_PROGRESS", label: "In Progress" },
   { key: "RESOLVED", label: "Resolved" },
+  { key: "REJECTED", label: "Rejected" },
 ];
 
 type FilterKey = ReportStatus | "ALL";
@@ -39,6 +40,7 @@ type FilterKey = ReportStatus | "ALL";
 type ReportsScreenProps = NativeStackScreenProps<RootStackParamList, "Reports">;
 
 export default function ReportsScreen({ navigation }: ReportsScreenProps) {
+  const { email } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -54,7 +56,11 @@ export default function ReportsScreen({ navigation }: ReportsScreenProps) {
     setError(null);
 
     try {
-      const data = await getReports();
+      if (!email) {
+        throw new Error("Not signed in");
+      }
+
+      const data = await getReports(email);
 
       if (!mountedRef.current) {
         return;
@@ -186,7 +192,7 @@ export default function ReportsScreen({ navigation }: ReportsScreenProps) {
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <FlatList
         data={filtered}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         ListHeaderComponent={Header}
         ListEmptyComponent={
@@ -216,25 +222,34 @@ export default function ReportsScreen({ navigation }: ReportsScreenProps) {
             tintColor={colors.primary}
           />
         }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() =>
-              navigation.navigate("ReportDetails", { report: item })
-            }
-            style={styles.card}
-            accessibilityRole="button"
-            accessibilityLabel={`Open report ${item.id}`}
-          >
+        renderItem={({ item, index }) => (
+          <FadeInView delay={Math.min(index, 6) * 70}>
+            <ScalePressable
+              onPress={() =>
+                navigation.navigate("ReportDetails", { report: item })
+              }
+              style={styles.card}
+              accessibilityLabel={`Open report ${item.display_id}`}
+            >
             <View style={styles.cardTop}>
-              <Image
-                source={{ uri: joinUrl(BASE_URL, item.original_image_url) }}
-                style={styles.thumb}
-              />
+              <View>
+                <Image
+                  source={{ uri: item.original_image_url }}
+                  style={styles.thumb}
+                />
+                {item.garbage_count > 0 && (
+                  <View style={styles.thumbChip}>
+                    <Ionicons name="trash" size={9} color={colors.white} />
+                    <Text style={styles.thumbChipText}>
+                      {item.garbage_count}
+                    </Text>
+                  </View>
+                )}
+              </View>
 
               <View style={styles.cardBody}>
                 <View style={styles.cardTopRow}>
-                  <Text style={styles.reportId}>Report #{item.id}</Text>
+                  <Text style={styles.reportId}>Report #{item.display_id}</Text>
                   <StatusBadge
                     status={item.garbage_detected ? item.status : "NO_GARBAGE"}
                   />
@@ -281,7 +296,8 @@ export default function ReportsScreen({ navigation }: ReportsScreenProps) {
                 value={item.highest_confidence}
               />
             </View>
-          </TouchableOpacity>
+            </ScalePressable>
+          </FadeInView>
         )}
       />
     </SafeAreaView>
@@ -402,6 +418,23 @@ const styles = StyleSheet.create({
     height: 76,
     borderRadius: radius.lg,
     backgroundColor: colors.border,
+  },
+  thumbChip: {
+    position: "absolute",
+    bottom: 4,
+    right: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(16,32,22,0.78)",
+    borderRadius: radius.pill,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  thumbChipText: {
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: "800",
+    marginLeft: 2,
   },
   cardBody: {
     flex: 1,

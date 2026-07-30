@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "app",
-    "slug": "app",
+    "name": "WasteWatch",
+    "slug": "wastewatch",
     "plugins": [
       [
         "expo-image-picker",
@@ -24,9 +24,10 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.aisoc.wastewatch",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0F8A4C"
       },
       "usesCleartextTraffic": true,
       "edgeToEdgeEnabled": false,

@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import {
   View,
   Text,
@@ -16,13 +14,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import { BASE_URL } from "../config/api";
 import StatusBadge from "../components/StatusBadge";
 import StatusTimeline from "../components/StatusTimeline";
 import DetectionConfidence from "../components/DetectionConfidence";
+import FadeInView from "../components/FadeInView";
 import { colors, radius, shadow, spacing } from "../theme";
 import type { RootStackParamList } from "../navigation/types";
-import { joinUrl } from "../utils/url";
 
 type ReportDetailsScreenProps = NativeStackScreenProps<
   RootStackParamList,
@@ -34,17 +31,14 @@ export default function ReportDetailsScreen({
 }: ReportDetailsScreenProps) {
   const { report } = route.params;
 
-  // No boxes are drawn when nothing is detected, so default to the original.
-  const [view, setView] = useState<"annotated" | "original">(
-    report.garbage_detected ? "annotated" : "original",
-  );
-
-  const imageUrl =
-    view === "annotated"
-      ? report.annotated_image_url
-      : report.original_image_url;
+  const imageUrl = report.original_image_url;
+  const hasCoordinates = report.latitude !== null && report.longitude !== null;
 
   const openMap = () => {
+    if (!hasCoordinates) {
+      return;
+    }
+
     const url = `https://www.google.com/maps?q=${report.latitude},${report.longitude}`;
     Linking.openURL(url).catch(() =>
       Alert.alert("Cannot open maps", "No map app available."),
@@ -55,33 +49,15 @@ export default function ReportDetailsScreen({
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.headerRow}>
-          <Text style={styles.title}>Report #{report.id}</Text>
+          <Text style={styles.title}>Report #{report.display_id}</Text>
           <StatusBadge
             status={report.garbage_detected ? report.status : "NO_GARBAGE"}
           />
         </View>
 
-        <View style={styles.toggle}>
-          <ToggleTab
-            label="AI Detection"
-            icon="scan"
-            active={view === "annotated"}
-            onPress={() => setView("annotated")}
-          />
-          <ToggleTab
-            label="Original"
-            icon="image"
-            active={view === "original"}
-            onPress={() => setView("original")}
-          />
-        </View>
-
-        <View style={styles.imageCard}>
+        <FadeInView style={styles.imageCard}>
           {imageUrl ? (
-            <Image
-              source={{ uri: joinUrl(BASE_URL, imageUrl) }}
-              style={styles.image}
-            />
+            <Image source={{ uri: imageUrl }} style={styles.image} />
           ) : (
             <View style={styles.imageMissing}>
               <Ionicons
@@ -92,7 +68,7 @@ export default function ReportDetailsScreen({
               <Text style={styles.imageMissingText}>Image not available</Text>
             </View>
           )}
-        </View>
+        </FadeInView>
 
         <View style={styles.detectionCard}>
           <DetectionConfidence
@@ -120,6 +96,26 @@ export default function ReportDetailsScreen({
               <Text style={styles.statLabel}>Garbage present</Text>
             </View>
           </View>
+
+          {report.detected_items.length > 0 && (
+            <>
+              <View style={[styles.divider, { marginTop: spacing.md }]} />
+              <Text style={styles.itemsLabel}>Detected items</Text>
+              {report.detected_items.map((item) => (
+                <View key={item.id} style={styles.itemRow}>
+                  <Ionicons
+                    name="trash-outline"
+                    size={15}
+                    color={colors.primaryDark}
+                  />
+                  <Text style={styles.itemLabel}>{item.label}</Text>
+                  <Text style={styles.itemConfidence}>
+                    {Math.round(item.confidence * 100)}%
+                  </Text>
+                </View>
+              ))}
+            </>
+          )}
         </View>
 
         <Text style={styles.sectionLabel}>STATUS</Text>
@@ -155,10 +151,20 @@ export default function ReportDetailsScreen({
 
         <Text style={styles.sectionLabel}>LOCATION</Text>
         <View style={styles.infoCard}>
+          {report.address ? (
+            <>
+              <InfoRow icon="business" label="Area" value={report.address} />
+              <View style={styles.divider} />
+            </>
+          ) : null}
           <InfoRow
             icon="navigate"
             label="Coordinates"
-            value={`${report.latitude.toFixed(5)}, ${report.longitude.toFixed(5)}`}
+            value={
+              hasCoordinates
+                ? `${report.latitude?.toFixed(5)}, ${report.longitude?.toFixed(5)}`
+                : "Not available"
+            }
           />
           <View style={styles.divider} />
           <InfoRow
@@ -168,51 +174,21 @@ export default function ReportDetailsScreen({
           />
         </View>
 
-        <TouchableOpacity
-          style={styles.mapButton}
-          activeOpacity={0.85}
-          onPress={openMap}
-          accessibilityRole="button"
-          accessibilityLabel="View report location on map"
-        >
-          <Ionicons name="map" size={18} color={colors.primary} />
-          <Text style={styles.mapButtonText}>Open map</Text>
-          <Ionicons name="open-outline" size={16} color={colors.primary} />
-        </TouchableOpacity>
+        {hasCoordinates && (
+          <TouchableOpacity
+            style={styles.mapButton}
+            activeOpacity={0.85}
+            onPress={openMap}
+            accessibilityRole="button"
+            accessibilityLabel="View report location on map"
+          >
+            <Ionicons name="map" size={18} color={colors.primary} />
+            <Text style={styles.mapButtonText}>Open map</Text>
+            <Ionicons name="open-outline" size={16} color={colors.primary} />
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-function ToggleTab({
-  label,
-  icon,
-  active,
-  onPress,
-}: {
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      style={[styles.tab, active && styles.tabActive]}
-      onPress={onPress}
-      activeOpacity={0.8}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-      accessibilityLabel={`${label} image`}
-    >
-      <Ionicons
-        name={icon}
-        size={15}
-        color={active ? colors.white : colors.primaryDark}
-      />
-      <Text style={[styles.tabText, active && styles.tabTextActive]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
   );
 }
 
@@ -256,33 +232,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: colors.text,
     letterSpacing: -0.3,
-  },
-  toggle: {
-    flexDirection: "row",
-    backgroundColor: colors.primarySoft,
-    borderRadius: radius.lg,
-    padding: 4,
-    marginBottom: spacing.md,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: "row",
-    paddingVertical: spacing.sm + 3,
-    borderRadius: radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tabActive: {
-    backgroundColor: colors.primary,
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: colors.primaryDark,
-    marginLeft: spacing.xs + 2,
-  },
-  tabTextActive: {
-    color: colors.white,
   },
   imageCard: {
     backgroundColor: colors.card,
@@ -343,6 +292,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     marginTop: 2,
+  },
+  itemsLabel: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    marginTop: spacing.md,
+  },
+  itemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: spacing.sm,
+  },
+  itemLabel: {
+    flex: 1,
+    fontSize: 13.5,
+    fontWeight: "600",
+    color: colors.text,
+    marginLeft: spacing.sm,
+    textTransform: "capitalize",
+  },
+  itemConfidence: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.primaryDark,
   },
   sectionLabel: {
     fontSize: 11.5,
