@@ -14,9 +14,9 @@ In normal use, the mobile app talks to a **deployed municipal dashboard**, which
 |---|---|---|
 | What it is | Deployed dashboard at `waste-detection-nexty.vercel.app`, maintained externally ([source](https://github.com/jagrat-khatter/waste-detection-nexty)) | FastAPI server in this repo's `server/` folder |
 | Who should use it | Everyone building or evaluating the app | Developers modifying or studying backend code |
-| Setup required | None — already configured | Python, MySQL, trained model, config changes |
+| Setup required | None — already configured | Python, PostgreSQL, trained model, config changes |
 | Auth | Firebase email + verification | None |
-| Storage | Cloudinary + Postgres (managed by the dashboard) | Local disk + local MySQL |
+| Storage | Cloudinary + Postgres (managed by the dashboard) | Local disk + local PostgreSQL |
 | ML inference | Hosted API (HuggingFace) | Local YOLO model (`ml_models/best.pt`) |
 
 ## Live Dashboard
@@ -145,7 +145,7 @@ The project's original MVP backend: a FastAPI service that accepts an image, run
 ### Prerequisites
 
 - Python 3.11+
-- MySQL running locally (configured via PyMySQL; WAMP/XAMPP works fine)
+- PostgreSQL running locally
 - A trained YOLO model at `ml_models/best.pt` (not shipped — ask a team member or train one via `ml_training/`)
 - Node/Expo prerequisites from the app section, if also running the app against it
 
@@ -155,13 +155,10 @@ Create `.env` in the **repository root** (not inside `server/`):
 
 ```env
 DB_HOST=localhost
-DB_PORT=3306
+DB_PORT=5432
 DB_NAME=garbage_detection
-DB_USER=root
+DB_USER=postgres
 DB_PASSWORD=your_password
-
-# Minimum YOLO confidence (0..1) for a detection to count as garbage
-DETECTION_CONF=0.70
 ```
 
 ### 2. Install dependencies
@@ -176,13 +173,28 @@ pip install -r requirements.txt
 
 ### 3. Create the database and tables
 
-With MySQL running:
+With PostgreSQL running:
 
-```bash
-python init_db.py
+```sql
+CREATE DATABASE garbage_detection;
+CREATE TABLE reports (
+    id SERIAL PRIMARY KEY,
+    latitude DOUBLE PRECISION NOT NULL,
+    longitude DOUBLE PRECISION NOT NULL,
+    original_image_path TEXT NOT NULL,
+    annotated_image_path TEXT,
+    garbage_detected BOOLEAN NOT NULL,
+    garbage_count INTEGER NOT NULL,
+    highest_confidence DOUBLE PRECISION NOT NULL,
+    status VARCHAR(255) DEFAULT 'PENDING',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
-Creates the `garbage_detection` database and `reports` table.
+Important:
+
+- The backend code currently does not auto-create tables.
+- Make sure the `reports` table is created before starting the app, either with a migration or a manual SQL script.
 
 ### 4. Start the server
 
@@ -245,7 +257,7 @@ To train or retrain the model locally, place the downloaded dataset in `dataset/
 ### Local Backend — [Local backend only]
 
 - FastAPI
-- MySQL (via SQLAlchemy + PyMySQL)
+- PostgreSQL (via SQLAlchemy)
 - Uvicorn
 - YOLO (Ultralytics) for local inference
 

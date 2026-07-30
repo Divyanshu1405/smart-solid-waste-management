@@ -40,9 +40,6 @@ __pycache__/
 *.onnx
 *.engine
 
-ml_models/*
-!ml_models/.gitkeep
-
 runs/*
 !runs/.gitkeep
 
@@ -138,9 +135,6 @@ dist/
 *.tmp
 *.temp
 
-# ML Models
-ml_models/
-
 # Dataset source material
 dataset/
 dataset_offline_aug/
@@ -148,9 +142,6 @@ dataset_offline_aug_G2/
 
 # Sample internet test images
 test_images_internet/
-
-# ML training workspace
-ml_training/
 
 #evaluation
 evaluation/
