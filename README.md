@@ -1,46 +1,150 @@
 # AI-Powered Garbage Detection and Reporting System
 
-## Overview
+## Project Summary
 
-This project is an AI-powered garbage detection and reporting system that allows users to report waste accumulation using a mobile app. It combines a YOLO-based object detection model, a FastAPI backend, and a React Native + Expo client with typed navigation, report history, and annotated result views.
+This repository contains a citizen reporting app for waste detection, plus the ML and backend pieces that support it.
 
-## Research Objective
+The key shift in the current setup is that the mobile app now talks to a deployed municipal dashboard instead of a local FastAPI server during normal usage. That dashboard owns the backend workflow for authentication, persistence, image storage, and ML inference.
 
-This project investigates the use of YOLO-based object detection for automated garbage identification and reporting in urban environments. The long-term objective is to evaluate model performance, improve detection accuracy through experimentation, and document findings in a research-oriented setting.
+## Live Dashboard
 
-## Current MVP Scope
+- Dashboard: [https://waste-detection-nexty.vercel.app](https://waste-detection-nexty.vercel.app)
+- API base URL used by the app: `https://waste-detection-nexty.vercel.app`
 
-This project implements the citizen reporting and AI-based waste detection core of a larger Smart Solid Waste Management System.
+## Separation of Concerns
 
-**Implemented:**
+### Mobile App
 
-- Citizen mobile application with image capture, location tagging, and report review
-- Geotagged complaint reporting
-- YOLO-based garbage detection with bounding boxes
-- FastAPI backend with report management
-- PostgreSQL persistence
-- Annotated original and detection image views in the app
+The `app/` folder is the citizen-facing client.
 
-**Planned Enhancements:**
+It is responsible for:
 
-- Municipal dashboard for complaint tracking
-- Vehicle routing and tracking
-- Route optimization algorithms
-- Automated alerts and enforcement notifications
-- Advanced analytics and monitoring
-- Multi-role authentication and authorization
-- Real-time status update workflow
-- Cloud deployment infrastructure
-- Push notifications for users
-- Geospatial visualization and mapping
-- Multi-class waste type classification
+- Signing users in and handling email verification
+- Capturing or uploading waste photos
+- Collecting GPS location with each report
+- Sending reports to the deployed dashboard backend
+- Showing report history, status, and detail views
+- Presenting clean, citizen-friendly UI copy
 
-## Main Components
+### Deployed Dashboard / Backend
 
-- Mobile app: React Native + Expo
-- Backend API: FastAPI + PostgreSQL
-- ML pipeline: YOLO training and inference
-- Uploaded images and annotated outputs served from the backend
+The live dashboard is the system of record for reports.
+
+It is responsible for:
+
+- Accepting report submissions from the mobile app
+- Running the detection and storage workflow
+- Persisting report data and images
+- Returning report history and report details
+- Serving the citizen-specific report feed
+
+### Local Server Code
+
+The `server/` folder remains in this repo as the FastAPI implementation used for local development, experimentation, and reference.
+
+It is useful when you want to inspect backend behavior, adapt endpoints, or run the API locally against PostgreSQL and a trained model.
+
+### ML Assets
+
+The `ml_training/`, `ml_models/`, `runs/`, `weights/`, and `uploads/` folders support the detection workflow.
+
+They contain or reference:
+
+- YOLO training and evaluation artifacts
+- The trained model used for inference
+- Annotated image outputs
+- Upload directories for original and processed images
+
+## How the App Works
+
+1. The citizen signs in to the mobile app.
+2. The user captures or selects a photo of waste.
+3. The app attaches location data and submits the report.
+4. The deployed dashboard processes the image and stores the result.
+5. The app fetches and displays the citizen's report history and status updates.
+
+## Features
+
+### Mobile Experience
+
+- Sign in and email verification
+- Image capture and gallery upload
+- Automatic GPS tagging
+- Report submission to the live dashboard backend
+- Report list, detail view, and detection confidence display
+- Pull-to-refresh support
+- Short, cleaner citizen-facing copy
+
+### Backend Workflow
+
+- Deployed API for report creation and retrieval
+- Report status tracking
+- Image storage and serving
+- ML inference and result persistence
+- Citizen-scoped report access
+
+### Machine Learning
+
+- YOLO-based garbage detection
+- Bounding box generation
+- Confidence scoring
+- Custom model support
+
+## Repository Layout
+
+```text
+garbage-detection/
+|-- app/                    # React Native + Expo client
+|-- server/                 # FastAPI backend source for local/reference use
+|-- ml_training/            # Training scripts and experiments
+|-- ml_models/              # Saved model artifacts
+|-- uploads/                # Original and annotated image outputs
+|-- runs/                   # Training/inference run outputs
+|-- weights/                # Additional model weights
+`-- README.md
+```
+
+## Mobile App Setup
+
+### 1. Install dependencies
+
+```bash
+cd app
+npm install
+```
+
+### 2. Start Expo
+
+```bash
+npm start
+```
+
+Or run a platform directly:
+
+```bash
+npm run android
+npm run ios
+npm run web
+```
+
+### 3. Backend configuration
+
+The app is already configured to talk to the deployed dashboard.
+
+If you need to inspect or change the API base URL, see:
+
+- `app/src/config/api.ts`
+
+## Optional Local Backend Setup
+
+If you want to run the FastAPI backend locally, you will need:
+
+- Python 3.11+
+- PostgreSQL
+- A trained YOLO model in `ml_models/best.pt`
+- A local `.env` file with database credentials
+
+This local backend is not required for the normal app flow against the live dashboard.
 
 ## Dataset
 
@@ -50,76 +154,9 @@ https://universe.roboflow.com/garbage-detection-czeg5/garbage_detection-wvzwv
 
 If you want to train or retrain the model locally, place the downloaded dataset in the `dataset/` folder after cloning the repo.
 
-## Features
-
-### Mobile App
-
-- Capture or upload images
-- Capture GPS location
-- Analyze images on upload
-- View submitted reports
-- View report details
-- View original and annotated images
-- Pull-to-refresh support
-- Status tracking
-
-### Backend
-
-- REST API with FastAPI
-- PostgreSQL integration
-- YOLO model inference
-- Image storage and serving
-- Report management endpoints
-- Static file serving for uploads
-
-### Machine Learning
-
-- YOLO-based garbage detection
-- Bounding box generation
-- Confidence scoring
-- Custom trained model support
-
-## Project Structure
-
-```text
-garbage-detection/
-|-- app/
-|   |-- src/
-|   |   |-- screens/
-|   |   |-- navigation/
-|   |   |-- services/
-|   |   |-- types/
-|   |   |-- config/
-|   |   |-- components/
-|   |   `-- constants/
-|   |-- App.tsx
-|   |-- package.json
-|   `-- app.json
-|
-|-- server/
-|   |-- routers/
-|   |-- services/
-|   |-- schemas/
-|   |-- models/
-|   |-- app.py
-|   |-- config.py
-|   |-- database.py
-|   `-- requirements.txt
-|
-|-- ml_training/
-|-- ml_models/
-|-- uploads/
-|   |-- original/
-|   `-- annotated/
-|-- runs/
-|-- weights/
-|-- .gitignore
-`-- README.md
-```
-
 ## Technology Stack
 
-### Frontend
+### Client
 
 - React Native
 - Expo
@@ -128,10 +165,9 @@ garbage-detection/
 - Expo Image Picker
 - Expo Location
 
-### Backend
+### Local Backend
 
 - FastAPI
-- SQLAlchemy
 - PostgreSQL
 - Uvicorn
 
@@ -141,259 +177,12 @@ garbage-detection/
 - PyTorch
 - OpenCV
 
-## Prerequisites
-
-Install the following:
-
-- Python 3.11+
-- PostgreSQL
-- Node.js LTS
-- npm
-- Expo Go for Android or iOS
-
-Recommended before starting:
-
-- A trained YOLO model saved as `ml_models/best.pt`
-- A local PostgreSQL database created for the project
-
-## Backend Setup
-
-### 1. Go to the server folder
-
-```bash
-cd server
-```
-
-### 2. Create a virtual environment
-
-```bash
-python -m venv .venv
-```
-
-Activate it:
-
-Windows:
-
-```bash
-.venv\Scripts\activate
-```
-
-Linux or macOS:
-
-```bash
-source .venv/bin/activate
-```
-
-### 3. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Configure environment variables
-
-Create a `.env` file in the repository root, not inside `server`.
-
-Example:
-
-```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=garbage_detection
-DB_USER=postgres
-DB_PASSWORD=your_password
-```
-
-### 5. Create the database
-
-```sql
-CREATE DATABASE garbage_detection;
-```
-
-Important:
-
-- The backend code currently does not auto-create tables.
-- Make sure the `reports` table is created before starting the app, either with a migration or a manual SQL script.
-
-### 6. Add the trained model
-
-Place the trained YOLO model in:
-
-```text
-ml_models/
-```
-
-Expected file:
-
-```text
-ml_models/best.pt
-```
-
-### 7. Start the backend
-
-From the `server` directory:
-
-```bash
-uvicorn app:app --reload
-```
-
-Backend URL:
-
-```text
-http://127.0.0.1:8000
-```
-
-Swagger docs:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-Health check:
-
-```http
-GET /health
-```
-
-## Mobile App Setup
-
-### 1. Go to the app folder
-
-```bash
-cd app
-```
-
-### 2. Install dependencies
-
-```bash
-npm install
-```
-
-### 3. Backend URL configuration
-
-The app now generates its API URL automatically when you start Expo.
-
-Use one of these commands from the `app` folder:
-
-```bash
-npm start
-```
-
-or
-
-```bash
-npm run android
-```
-
-or
-
-```bash
-npm run ios
-```
-
-or
-
-```bash
-npm run web
-```
-
-The generated URL is written to `app/src/config/generatedApi.ts` and is ignored by git.
-
-If you move between networks or devices, rerun Expo so the generated URL is refreshed.
-
-### 4. Start Expo
-
-```bash
-npx expo start
-```
-
-Scan the QR code using Expo Go.
-
-Make sure:
-
-- Phone and PC are on the same Wi-Fi network
-- Backend is running
-- If the app is already open, reload it after restarting Expo so the generated API URL is refreshed
-
-## API Endpoints
-
-### Detect Garbage
-
-```http
-POST /detect
-```
-
-Detect garbage in an uploaded image using the YOLO model.
-
-**Request:**
-
-- `file` (multipart/form-data): Image file to analyze
-- `latitude` (float): GPS latitude coordinate
-- `longitude` (float): GPS longitude coordinate
-
-**Response:** Detection results with bounding boxes and confidence scores
-
-### Get All Reports
-
-```http
-GET /reports
-```
-
-Retrieve all submitted garbage reports.
-
-### Get Report Details
-
-```http
-GET /reports/{report_id}
-```
-
-Fetch detailed information about a specific report including detection results and images.
-
-### Update Report Status
-
-```http
-PATCH /reports/{report_id}/status
-```
-
-Update the status of a report (e.g., pending, resolved, in-progress).
-
-## Reporting Workflow
-
-The typical user flow for reporting garbage:
-
-```
-User
-  ├─> Select/capture image
-  ├─> Capture GPS location
-  ├─> Submit report to backend
-  │    ├─> YOLO model analyzes image
-  │    ├─> Generates bounding boxes and confidence scores
-  │    └─> Stores annotated result
-  └─> Browse all reports
-      └─> View detection details with annotations
-```
-
 ## Development Notes
 
-**Repository Notes:**
-
-- Empty directories are marked with `.gitkeep` files, allowing contributors to clone and begin working immediately without initialization scripts.
-- Git ignores large artifacts including model files, training outputs, dataset folders, evaluation outputs, and upload directories.
-
-**Setup Tips:**
-
-- Use a `.env` file for local configuration; never commit secrets.
-- Ensure PostgreSQL is running before starting the backend.
-- Test the mobile app on a physical device or emulator on the same network as the backend server.
-- Place any trained model artifacts at `ml_models/best.pt`.
-- Place any project-specific run outputs in `runs/` or `weights/` only if they are meant to stay local.
-- The trained model is not shipped with the repo, so someone on the team must provide `ml_models/best.pt` before inference will work.
-
-**Development Notes:**
-
 - Run `npm run typecheck` from the `app` folder to validate the Expo client.
-- Run `uvicorn app:app --reload` from the `server` folder to start the API.
+- The deployed backend base URL is defined in `app/src/config/api.ts`.
 - The mobile app uses typed navigation, shared status types, and safe URL joining for report images.
+- If the live backend URL changes, update `app/src/config/api.ts` and the Live Dashboard section above.
 
 ## License
 
