@@ -22,8 +22,11 @@ In normal use, the mobile app talks to a **deployed municipal dashboard**, which
 ## Live Dashboard
 
 - Dashboard: [waste-detection-nexty.vercel.app](https://waste-detection-nexty.vercel.app)
+- Citizen Mobile app: [Android_apk](https://drive.google.com/file/d/1NqVXSHtZxI7TOoyVun98RC-LnmXaOHpL/view?usp=drive_link)
 - API base URL used by the app: `https://waste-detection-nexty.vercel.app`
 - Source repo: [jagrat-khatter/waste-detection-nexty](https://github.com/jagrat-khatter/waste-detection-nexty)
+- API Repo: [jagrat-khatter/waste-detection-api](https://github.com/jagrat-khatter/waste-detection-api)
+
 
 ## Separation of Concerns
 

@@ -70,7 +70,10 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
         setResult(null);
       }
     } catch {
-      Alert.alert("Couldn't open gallery", "Please try choosing a photo again.");
+      Alert.alert(
+        "Couldn't open gallery",
+        "Please try choosing a photo again.",
+      );
     }
   };
 
@@ -167,8 +170,12 @@ export default function ReportScreen({ navigation }: ReportScreenProps) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
-      <ScrollView contentContainerStyle={styles.body}>
+    <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
+      <ScrollView
+        contentContainerStyle={styles.body}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.pageHeader}>
           <Text style={styles.kicker}>Submit report</Text>
           <Text style={styles.pageTitle}>Report waste</Text>
@@ -364,10 +371,10 @@ const styles = StyleSheet.create({
   },
   preview: {
     width: "100%",
-    height: 300,
+    aspectRatio: 4 / 3,
   },
   placeholder: {
-    height: 300,
+    aspectRatio: 4 / 3,
     alignItems: "center",
     justifyContent: "center",
     padding: spacing.lg,

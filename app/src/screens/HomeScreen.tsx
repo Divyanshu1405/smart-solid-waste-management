@@ -92,7 +92,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 />
               </View>
               <View style={{ marginLeft: spacing.md, flex: 1 }}>
-                <Text style={styles.heroTitle}>WasteWatch</Text>
+                <Text style={styles.heroTitle}>CivicX</Text>
                 <Text style={styles.heroSubtitle} numberOfLines={1}>
                   {email ?? "Garbage reporting"}
                 </Text>

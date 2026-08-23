@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "WasteWatch",
-    "slug": "wastewatch",
+    "name": "CivicX",
+    "slug": "civicx",
     "plugins": [
       [
         "expo-image-picker",
@@ -12,9 +12,10 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow WasteWatch to use your location to place your garbage report accurately."
+          "locationWhenInUsePermission": "Allow CivicX to use your location to place your garbage report accurately."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "version": "1.0.0",
     "orientation": "portrait",
@@ -30,17 +31,27 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.aisoc.wastewatch",
+      "package": "com.aisoc.civicx",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0F8A4C"
       },
       "edgeToEdgeEnabled": false,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "b0c7d6f5-9077-4c04-893e-4d7ea32bc696"
+      }
     }
   }
 }

@@ -117,36 +117,40 @@ export default function ReportsScreen({ navigation }: ReportsScreenProps) {
 
   if (error && reports.length === 0 && !loading) {
     return (
-      <View style={styles.errorState}>
-        <Ionicons
-          name="cloud-offline-outline"
-          size={56}
-          color={colors.textMuted}
-        />
-        <Text style={styles.emptyTitle}>Couldn't load reports</Text>
-        <Text style={styles.emptyText}>{error}</Text>
-        <View style={styles.retryWrap}>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => void loadReports({ showLoading: true })}
-            style={styles.retryButton}
-            accessibilityRole="button"
-            accessibilityLabel="Retry loading reports"
-          >
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
+      <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
+        <View style={styles.errorState}>
+          <Ionicons
+            name="cloud-offline-outline"
+            size={56}
+            color={colors.textMuted}
+          />
+          <Text style={styles.emptyTitle}>Couldn't load reports</Text>
+          <Text style={styles.emptyText}>{error}</Text>
+          <View style={styles.retryWrap}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => void loadReports({ showLoading: true })}
+              style={styles.retryButton}
+              accessibilityRole="button"
+              accessibilityLabel="Retry loading reports"
+            >
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (loading) {
     return (
-      <View style={styles.list}>
-        {[0, 1, 2, 3].map((i) => (
-          <SkeletonCard key={i} />
-        ))}
-      </View>
+      <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
+        <View style={styles.list}>
+          {[0, 1, 2, 3].map((i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -190,7 +194,7 @@ export default function ReportsScreen({ navigation }: ReportsScreenProps) {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}

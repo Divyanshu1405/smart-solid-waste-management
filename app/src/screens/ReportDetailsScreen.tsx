@@ -47,10 +47,15 @@ export default function ReportDetailsScreen({
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
-      <ScrollView contentContainerStyle={styles.body}>
+    <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
+      <ScrollView
+        contentContainerStyle={styles.body}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.headerRow}>
-          <Text style={styles.title}>Report #{report.display_id}</Text>
+          <Text style={styles.title} numberOfLines={2}>
+            Report #{report.display_id}
+          </Text>
           <StatusBadge
             status={report.garbage_detected ? report.status : "NO_GARBAGE"}
           />
@@ -233,9 +238,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   title: {
+    flex: 1,
     ...typography.screenTitle,
     color: colors.text,
     letterSpacing: -0.3,
+    marginRight: spacing.md,
   },
   imageCard: {
     backgroundColor: colors.card,
@@ -247,10 +254,10 @@ const styles = StyleSheet.create({
   },
   image: {
     width: "100%",
-    height: 320,
+    aspectRatio: 4 / 3,
   },
   imageMissing: {
-    height: 320,
+    aspectRatio: 4 / 3,
     alignItems: "center",
     justifyContent: "center",
   },

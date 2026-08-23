@@ -115,7 +115,7 @@ export default function LoginScreen() {
               source={require("../../assets/icon.png")}
               style={styles.logoImage}
             />
-            <Text style={styles.title}>WasteWatch</Text>
+            <Text style={styles.title}>CivicX</Text>
             <Text style={styles.subtitle}>
               Report waste, track cleanup in your city.
             </Text>
@@ -138,7 +138,7 @@ export default function LoginScreen() {
             <Text style={styles.hint}>
               {isSignup
                 ? "Use a real email — we'll send a verification link before you can report."
-                : "Sign in with your verified WasteWatch account."}
+                : "Sign in with your verified CivicX account."}
             </Text>
 
             <Text style={styles.inputLabel}>Email</Text>
